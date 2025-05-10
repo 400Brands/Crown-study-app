@@ -24,6 +24,7 @@ import {
   SearchIcon,
 } from "@/components/icons";
 import { CrownIcon } from "lucide-react";
+import GetStarted from "./modal";
 
 export const Navbar = () => {
   const searchInput = (
@@ -87,16 +88,7 @@ export const Navbar = () => {
           <ThemeSwitch />
         </NavbarItem>
         <NavbarItem className="hidden md:flex">
-          <Button
-            isExternal
-            as={Link}
-            className="text-sm font-normal text-white bg-primary"
-            href={siteConfig.links.sponsor}
-            
-            variant="flat"
-          >
-            Create Free Account
-          </Button>
+          <GetStarted size="md"/>
         </NavbarItem>
       </NavbarContent>
 

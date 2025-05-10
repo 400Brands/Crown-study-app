@@ -3,10 +3,12 @@ import { button as buttonStyles } from "@heroui/theme";
 import { siteConfig } from "@/config/site";
 import { title, subtitle } from "@/components/primitives";
 import DefaultLayout from "@/layouts/default";
-import { Card, CardBody, CardFooter, CardHeader, Image, Tab, Tabs } from "@heroui/react";
+import { Card, CardBody, CardFooter, CardHeader, Image, Modal, ModalContent, Tab, Tabs, useDisclosure } from "@heroui/react";
 import { CheckIcon } from "lucide-react";
+import GetStarted from "@/components/modal";
 
 export default function IndexPage() {
+
   return (
     <DefaultLayout>
       {/* Hero Section */}
@@ -39,18 +41,7 @@ export default function IndexPage() {
             </div>
 
             <div className="mt-6 flex gap-4">
-              <Link
-                isExternal
-                className={buttonStyles({
-                  color: "primary",
-                  radius: "md",
-                  variant: "shadow",
-                  size: "lg",
-                })}
-                href={siteConfig.links.docs}
-              >
-                Get Started
-              </Link>
+              <GetStarted size="lg"/>
               <Image
                 src="https://distinction.app/try-for-free.svg"
                 width={100}

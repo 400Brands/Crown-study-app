@@ -42,7 +42,7 @@ const IndexDashboard = () => {
   return (
     <DefaultLayout>
       <DashboardLayout>
-        <div className="space-y-6">
+        <div className="space-y-6 ">
           {!profile.profileComplete && (
             <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
               <CardBody className="p-6">

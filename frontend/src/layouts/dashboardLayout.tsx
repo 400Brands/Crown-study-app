@@ -17,6 +17,7 @@ import {
   Dot,
   LucideIcon,
 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 // Type definitions
 interface SubItem {
@@ -49,23 +50,23 @@ const navigationItems: NavGroup[] = [
       {
         name: "My Courses",
         icon: Layers,
-        path: "/courses",
+        path: "/dashboard/courses",
         subItems: [
-          { name: "Quizzes", path: "/courses/quizzes" },
-          { name: "Flashcards", path: "/courses/flashcards" },
-          { name: "Past Questions", path: "/courses/past-questions" },
+          { name: "Quizzes", path: "/dashboard/courses/quizzes" },
+          { name: "Flashcards", path: "/dashboard/courses/flashcards" },
+          { name: "Past Questions", path: "/dashboard/courses/past-questions" },
         ],
       },
       {
         name: "Study Library",
         icon: Library,
-        path: "/library",
+        path: "/dashboard/library",
         notifications: 8,
       },
       {
         name: "Study Planner",
         icon: Calendar,
-        path: "/planner",
+        path: "/dashboard/planner",
         dotIndicator: true,
       },
     ],
@@ -76,13 +77,13 @@ const navigationItems: NavGroup[] = [
       {
         name: "Notes Feed",
         icon: Edit3,
-        path: "/notes",
+        path: "/dashboard/notes",
         notifications: 12,
       },
       {
         name: "Upload Center",
         icon: UploadCloud,
-        path: "/upload",
+        path: "/dashboard/upload",
         highlight: true,
       },
     ],
@@ -93,24 +94,20 @@ const navigationItems: NavGroup[] = [
       {
         name: "Focused Mode",
         icon: Bolt,
-        path: "/label/quick",
+        path: "/dashboard/focused-mode",
         notifications: 3,
         isPriority: true,
         color: "text-red-600",
       },
-      {
-        name: "Games Analytics",
-        icon: Tag,
-        path: "/label/analytics",
-      },
+      
     ],
   },
   {
     section: "SYSTEM",
     items: [
-      { name: "Profile", icon: User, path: "/profile" },
-      { name: "Settings", icon: Settings, path: "/settings" },
-      { name: "Help", icon: HelpCircle, path: "/help" },
+      { name: "Profile", icon: User, path: "/dashboard/profile" },
+      { name: "Settings", icon: Settings, path: "/dashboard/settings" },
+      { name: "Help", icon: HelpCircle, path: "/dashboard/help" },
     ],
   },
 ];
@@ -121,7 +118,8 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [expanded, setExpanded] = useState<boolean>(true);
-  const [activePage, setActivePage] = useState<string>("/dashboard");
+  const location = useLocation();
+  const navigate = useNavigate();
   const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
 
   const toggleSidebar = () => {
@@ -132,8 +130,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     setOpenSubmenus((prev) => ({ ...prev, [path]: !prev[path] }));
   };
 
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
+
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen  ">
       {/* Sidebar */}
       <div
         className={`${
@@ -158,11 +160,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           if (item.subItems) {
                             toggleSubmenu(item.path);
                           }
-                          setActivePage(item.path);
+                          handleNavigation(item.path);
                         }}
                         className={`flex items-center w-full rounded-lg p-3 transition-all ${
-                          activePage === item.path ||
-                          (item.subItems && openSubmenus[item.path])
+                          location.pathname.startsWith(item.path)
                             ? "bg-indigo-50 text-indigo-600"
                             : "text-gray-700 hover:bg-gray-100"
                         } ${item.color || ""} ${
@@ -173,7 +174,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           <item.icon
                             size={20}
                             className={
-                              activePage === item.path ? "text-indigo-600" : ""
+                              location.pathname.startsWith(item.path) ? "text-indigo-600" : ""
                             }
                           />
                           {!expanded && item.notifications && (
@@ -206,9 +207,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           {item.subItems.map((subItem) => (
                             <li key={subItem.name}>
                               <button
-                                onClick={() => setActivePage(subItem.path)}
+                                onClick={() => handleNavigation(subItem.path)}
                                 className={`flex items-center w-full rounded-lg px-3 py-2 text-xs transition-all ${
-                                  activePage === subItem.path
+                                  location.pathname === subItem.path
                                     ? "bg-indigo-100 text-indigo-600"
                                     : "text-gray-600 hover:bg-gray-50"
                                 }`}
@@ -245,7 +246,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div
         className={`flex-1 flex flex-col ${
           expanded ? "ml-64" : "ml-20"
-        } transition-all duration-300 p-6`}
+        } transition-all duration-300 py-6 pl-6`}
       >
         {children}
       </div>

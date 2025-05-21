@@ -1,3 +1,5 @@
+//@ts-nocheck
+
 import {
   Card,
   CardBody,
@@ -28,6 +30,8 @@ import {
 import DashboardLayout from "@/layouts/dashboardLayout";
 import DefaultLayout from "@/layouts/default";
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import CourseQuizzes from "./quizzes";
 
 const MyCourses = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -113,13 +117,12 @@ const MyCourses = () => {
     <DefaultLayout>
       <DashboardLayout>
         <div className="space-y-6">
-
           {/* Tabs Navigation */}
           <Tabs
             aria-label="Course sections"
             selectedKey={activeTab}
             onSelectionChange={(key) => setActiveTab(key.toString())}
-            className="border-b border-gray-200"
+           
           >
             <Tab key="overview" title="Overview" />
             <Tab key="quizzes" title="Quizzes" />
@@ -386,64 +389,8 @@ const MyCourses = () => {
           {/* Quizzes Tab */}
           {activeTab === "quizzes" && (
             <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <FileText className="text-blue-500" size={20} />
-                  Course Quizzes
-                </h2>
-                <Button color="primary" size="sm">
-                  New Quiz
-                </Button>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {studyMaterials
-                  .filter((m) => m.type === "quiz")
-                  .map((quiz) => (
-                    <Card
-                      key={quiz.id}
-                      className="border border-gray-200 hover:shadow-md transition-shadow"
-                    >
-                      <CardBody className="p-4">
-                        <div className="flex justify-between items-start">
-                          <h3 className="font-medium">{quiz.title}</h3>
-                          <Chip size="sm" variant="flat">
-                            {quiz.course}
-                          </Chip>
-                        </div>
-                        <div className="my-3">
-                          <Progress
-                            value={(quiz.completed / quiz.questions) * 100}
-                            classNames={{
-                              indicator:
-                                "bg-gradient-to-r from-blue-500 to-indigo-600",
-                            }}
-                          />
-                          <div className="flex justify-between text-xs text-gray-500 mt-1">
-                            <span>
-                              {quiz.completed}/{quiz.questions} completed
-                            </span>
-                            <span>
-                              {Math.round(
-                                (quiz.completed / quiz.questions) * 100
-                              )}
-                              %
-                            </span>
-                          </div>
-                        </div>
-                        <Divider className="my-2" />
-                        <div className="flex justify-between items-center pt-2">
-                          <span className="text-xs text-gray-400">
-                            Due: {quiz.dueDate}
-                          </span>
-                          <Button size="sm" variant="flat" color="primary">
-                            Continue
-                          </Button>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  ))}
-              </div>
+              <CourseQuizzes/>
             </div>
           )}
 

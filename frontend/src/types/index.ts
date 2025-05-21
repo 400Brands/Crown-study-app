@@ -21,3 +21,30 @@ export interface ProfileData {
   updated_at?: string;
   [key: string]: any; // Allow for any additional fields
 }
+
+// Define types
+export type Question = {
+  id: string;
+  text: string;
+  options: { id: string; text: string; isCorrect: boolean }[];
+  explanation: string;
+};
+
+export type QuizConfig = {
+  title: string;
+  courseId: string;
+  questionCount: number;
+  difficultyLevel: "easy" | "medium" | "hard" | "mixed";
+  questionTypes: ("multiple-choice" | "true-false" | "short-answer")[];
+};
+
+export interface PDFQuizGeneratorModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onQuizGenerated: (quiz: {
+    title: string;
+    courseId: string;
+    questions: Question[];
+  }) => void;
+  availableCourses: { id: string; name: string }[];
+}

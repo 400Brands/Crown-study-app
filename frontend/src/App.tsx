@@ -30,6 +30,7 @@ import IndexDashboard from "@/pages/dashboard";
 import StudyLibrary from "./pages/dashboard/studyLibrary";
 import StudyPlanner from "./pages/dashboard/studyPlanner";
 import GameMode from "./pages/dashboard/gameMode";
+import CourseQuizzes from "./pages/dashboard/courses/quizzes";
 
 function App() {
   return (
@@ -46,7 +47,10 @@ function App() {
         <Route index element={<IndexDashboard />} />
 
         {/* Courses section with nested routes */}
-        <Route path="courses" element={<MyCourses />} />
+        <Route path="courses">
+          <Route index element={<MyCourses />} />
+          <Route path="quizzes" element={<CourseQuizzes />} />
+        </Route>
 
         {/* Other dashboard routes */}
         <Route path="library" element={<StudyLibrary />} />

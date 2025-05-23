@@ -32,6 +32,8 @@ import DefaultLayout from "@/layouts/default";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import CourseQuizzes from "./quizzes";
+import PastQuestions from "./pastQuestions";
+import Flashcards from "./flashCards";
 
 const MyCourses = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -122,14 +124,12 @@ const MyCourses = () => {
             aria-label="Course sections"
             selectedKey={activeTab}
             onSelectionChange={(key) => setActiveTab(key.toString())}
-           
           >
             <Tab key="overview" title="Overview" />
             <Tab key="quizzes" title="Quizzes" />
             <Tab key="flashcards" title="Flashcards" />
             <Tab key="pastQuestions" title="Past Questions" />
           </Tabs>
-
           {activeTab === "overview" && (
             <>
               {/* Courses Grid */}
@@ -385,125 +385,18 @@ const MyCourses = () => {
               </div>
             </>
           )}
-
           {/* Quizzes Tab */}
           {activeTab === "quizzes" && (
             <div className="space-y-4">
-
-              <CourseQuizzes/>
+              <CourseQuizzes />
             </div>
           )}
-
           {/* Flashcards Tab */}
           {activeTab === "flashcards" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <Bookmark className="text-purple-500" size={20} />
-                  Flashcard Decks
-                </h2>
-                <Button color="primary" size="sm">
-                  Create Deck
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {studyMaterials
-                  .filter((m) => m.type === "flashcard")
-                  .map((deck) => (
-                    <Card
-                      key={deck.id}
-                      className="border border-gray-200 hover:shadow-md transition-shadow"
-                    >
-                      <CardBody className="p-4">
-                        <div className="flex justify-between items-start">
-                          <h3 className="font-medium">{deck.title}</h3>
-                          <Chip size="sm" variant="flat">
-                            {deck.course}
-                          </Chip>
-                        </div>
-                        <div className="my-3">
-                          <Progress
-                            value={(deck.mastered / deck.cards) * 100}
-                            color="secondary"
-                          />
-                          <div className="flex justify-between text-xs text-gray-500 mt-1">
-                            <span>
-                              {deck.mastered}/{deck.cards} mastered
-                            </span>
-                            <span>
-                              {Math.round((deck.mastered / deck.cards) * 100)}%
-                            </span>
-                          </div>
-                        </div>
-                        <Divider className="my-2" />
-                        <div className="flex justify-between items-center pt-2">
-                          <span className="text-xs text-gray-400">
-                            Last reviewed: {deck.lastReviewed}
-                          </span>
-                          <Button size="sm" variant="flat" color="secondary">
-                            Review
-                          </Button>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  ))}
-              </div>
-            </div>
+            <Flashcards/>
           )}
-
           {/* Past Questions Tab */}
-          {activeTab === "pastQuestions" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <FileSpreadsheet className="text-green-500" size={20} />
-                  Past Questions
-                </h2>
-                <Button color="primary" size="sm">
-                  Upload Questions
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {studyMaterials
-                  .filter((m) => m.type === "pastQuestion")
-                  .map((pq) => (
-                    <Card
-                      key={pq.id}
-                      className="border border-gray-200 hover:shadow-md transition-shadow"
-                    >
-                      <CardBody className="p-4">
-                        <div className="flex justify-between items-start">
-                          <h3 className="font-medium">{pq.title}</h3>
-                          <div className="flex gap-2">
-                            <Chip size="sm" variant="flat">
-                              {pq.course}
-                            </Chip>
-                            <Chip size="sm" variant="flat">
-                              {pq.year}
-                            </Chip>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 my-3 text-sm text-gray-600">
-                          <span>{pq.pages} pages</span>
-                          <span>Downloads: {pq.downloads}</span>
-                        </div>
-                        <Divider className="my-2" />
-                        <div className="flex justify-between items-center pt-2">
-                          <span className="text-xs text-gray-400">
-                            Uploaded 2 weeks ago
-                          </span>
-                          <Button size="sm" variant="flat" color="success">
-                            Download
-                          </Button>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  ))}
-              </div>
-            </div>
-          )}
+          {activeTab === "pastQuestions" && <PastQuestions />}
         </div>
       </DashboardLayout>
     </DefaultLayout>

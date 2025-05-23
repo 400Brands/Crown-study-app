@@ -10,16 +10,11 @@ import {
   Pagination,
   useDisclosure,
 } from "@heroui/react";
-import {
-  FileText,
-  Clock,
-  ChevronRight,
-  FileUp,
-  Zap,
-} from "lucide-react";
+import { FileText, Clock, ChevronRight, FileUp, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import PDFQuizGeneratorModal from "../components/PDFQuizGeneratorModal";
 import { supabase } from "@/supabaseClient";
+import { Question } from "@/types";
 
 // Define types
 type Quiz = {
@@ -33,13 +28,6 @@ type Quiz = {
   user_id?: string;
 };
 
-type Question = {
-  id: string;
-  text: string;
-  options: { id: string; text: string; isCorrect: boolean }[];
-  explanation: string;
-  order?: number;
-};
 
 type Course = {
   id: string;
@@ -158,13 +146,13 @@ const CourseQuizzes = () => {
       // Prepare questions for insertion
       const questionsToInsert = newQuiz.questions.map((question, index) => ({
         quiz_id: quizData.id,
-        question_text: question.text,
+        question_text: question.text, // Map from text to question_text for database
         options: question.options,
         correct_answer_id: question.options.find((opt) => opt.isCorrect)?.id,
         explanation: question.explanation,
         order: index,
       }));
-
+      
       // Save all questions
       const { error: questionsError } = await supabase
         .from("quiz_questions")
@@ -197,9 +185,9 @@ const CourseQuizzes = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-h-screen">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ">
         <div>
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <FileText className="text-blue-500" size={20} />
@@ -288,7 +276,7 @@ const CourseQuizzes = () => {
                         Due: {new Date(quiz.due_date).toLocaleDateString()}
                       </span>
                     </div>
-                    <Link to={`/dashboard/quizzes/${quiz.id}`}>
+                    <Link to={`/dashboard/courses/quizzes/${quiz.id}`}>
                       <Button
                         size="sm"
                         variant="flat"

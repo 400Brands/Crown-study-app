@@ -3,7 +3,6 @@ import {
   Bookmark,
   Plus,
   RotateCw,
-  Download,
   Trash2,
   Edit,
   ChevronRight,

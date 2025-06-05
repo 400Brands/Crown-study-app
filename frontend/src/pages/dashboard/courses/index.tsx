@@ -1,39 +1,19 @@
 //@ts-nocheck
-
 import {
-  Card,
-  CardBody,
-  Button,
-  Chip,
-  Divider,
-  Avatar,
-  Progress,
-  Badge,
+  
   Tabs,
   Tab,
-  Image,
-  Spacer,
+  
 } from "@heroui/react";
-import {
-  BookOpen,
-  Clock,
-  Award,
-  BarChart2,
-  CheckCircle,
-  FileText,
-  Layers,
-  Bookmark,
-  FileSpreadsheet,
-  FileImage,
-  ChevronRight,
-} from "lucide-react";
+
 import DashboardLayout from "@/layouts/dashboardLayout";
 import DefaultLayout from "@/layouts/default";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import CourseQuizzes from "./quizzes";
 import PastQuestions from "./pastQuestions";
 import Flashcards from "./flashCards";
+import Overview from "./Overview";
+import { StudyMaterial } from "@/types";
 
 const MyCourses = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -50,7 +30,8 @@ const MyCourses = () => {
       assignmentsDue: 2,
       resources: 15,
       color: "bg-blue-500",
-      thumbnail: "/images/cs-course.jpg",
+      thumbnail:
+        "https://res.cloudinary.com/dgbreoalg/image/upload/v1748253398/360_F_239753981_Z0AGbK5i7v4aIVm1Of8trUYYTWgoQnuq-ezgif.com-webp-to-jpg-converter_abrzyb.jpg",
     },
     {
       id: 2,
@@ -62,12 +43,26 @@ const MyCourses = () => {
       assignmentsDue: 3,
       resources: 22,
       color: "bg-purple-500",
-      thumbnail: "/images/dsa-course.jpg",
+      thumbnail:
+        "https://res.cloudinary.com/dgbreoalg/image/upload/v1748253398/360_F_239753981_Z0AGbK5i7v4aIVm1Of8trUYYTWgoQnuq-ezgif.com-webp-to-jpg-converter_abrzyb.jpg",
+    },
+    {
+      id: 3,
+      title: "Data Structures and Algorithms",
+      code: "CSC 201",
+      progress: 45,
+      instructor: "Prof. Chukwu",
+      nextSession: "Wed, 2:00 PM",
+      assignmentsDue: 3,
+      resources: 22,
+      color: "bg-purple-500",
+      thumbnail:
+        "https://res.cloudinary.com/dgbreoalg/image/upload/v1748253398/360_F_239753981_Z0AGbK5i7v4aIVm1Of8trUYYTWgoQnuq-ezgif.com-webp-to-jpg-converter_abrzyb.jpg",
     },
   ];
 
   // Sample study materials
-  const studyMaterials = [
+  const studyMaterials: StudyMaterial[] = [
     {
       id: 1,
       course: "CSC 101",
@@ -128,262 +123,13 @@ const MyCourses = () => {
             <Tab key="overview" title="Overview" />
             <Tab key="quizzes" title="Quizzes" />
             <Tab key="flashcards" title="Flashcards" />
-            <Tab key="pastQuestions" title="Past Questions" />
           </Tabs>
           {activeTab === "overview" && (
-            <>
-              {/* Courses Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                {courses.map((course) => (
-                  <Card
-                    key={course.id}
-                    className="border border-gray-200 hover:shadow-md transition-shadow"
-                  >
-                    <CardBody className="p-0 overflow-hidden">
-                      <div className="relative">
-                        <Image
-                          src={course.thumbnail}
-                          alt={course.title}
-                          className="w-full h-40 object-cover"
-                        />
-                        <div className="absolute top-4 left-4">
-                          <div
-                            className={`${course.color} w-10 h-10 rounded-lg flex items-center justify-center text-white`}
-                          >
-                            <BookOpen size={18} />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="p-6">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-bold text-lg">
-                              {course.title}
-                            </h3>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-gray-500 text-sm">
-                                {course.code}
-                              </span>
-                              <Chip size="sm" variant="flat" color="success">
-                                Active
-                              </Chip>
-                            </div>
-                          </div>
-                          <Badge
-                            content={course.assignmentsDue}
-                            color="danger"
-                            shape="circle"
-                          >
-                            <Button isIconOnly variant="light" radius="full">
-                              <Clock className="text-gray-500" size={16} />
-                            </Button>
-                          </Badge>
-                        </div>
-
-                        <div className="my-4">
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-gray-500">Progress</span>
-                            <span className="font-medium">
-                              {course.progress}%
-                            </span>
-                          </div>
-                          <Progress
-                            aria-label="Course progress"
-                            value={course.progress}
-                            classNames={{
-                              base: "h-2",
-                              indicator:
-                                course.color.replace(
-                                  "bg",
-                                  "bg-gradient-to-r from"
-                                ) +
-                                "-400 to" +
-                                course.color.replace("bg", "-600"),
-                            }}
-                          />
-                        </div>
-
-                        <Divider className="my-4" />
-
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-2">
-                            <Clock size={16} className="text-gray-400" />
-                            <span className="text-sm text-gray-500">
-                              {course.nextSession}
-                            </span>
-                          </div>
-                          <Button
-                            size="sm"
-                            radius="full"
-                            variant="flat"
-                            color="primary"
-                            endContent={<ChevronRight size={16} />}
-                          >
-                            View Details
-                          </Button>
-                        </div>
-                      </div>
-                    </CardBody>
-                  </Card>
-                ))}
-              </div>
-
-              {/* Study Materials Preview */}
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold">
-                  Recent Study Materials
-                </h2>
-
-                {/* Quizzes Preview */}
-                <Card className="border border-gray-200">
-                  <CardBody className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold flex items-center gap-2">
-                        <FileText className="text-blue-500" size={18} />
-                        Quizzes
-                      </h3>
-                      <Button
-                        variant="light"
-                        size="sm"
-                        onPress={() => setActiveTab("quizzes")}
-                      >
-                        View All
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {studyMaterials
-                        .filter((m) => m.type === "quiz")
-                        .slice(0, 2)
-                        .map((quiz) => (
-                          <div
-                            key={quiz.id}
-                            className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                          >
-                            <div className="flex justify-between items-start">
-                              <h4 className="font-medium">{quiz.title}</h4>
-                              <Chip size="sm" variant="flat">
-                                {quiz.course}
-                              </Chip>
-                            </div>
-                            <div className="flex items-center justify-between mt-3">
-                              <span className="text-sm text-gray-500">
-                                {quiz.completed}/{quiz.questions} questions
-                              </span>
-                              <Progress
-                                size="sm"
-                                value={(quiz.completed / quiz.questions) * 100}
-                                className="max-w-[100px]"
-                              />
-                            </div>
-                            <div className="text-xs text-gray-400 mt-2">
-                              Due: {quiz.dueDate}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </CardBody>
-                </Card>
-
-                {/* Flashcards Preview */}
-                <Card className="border border-gray-200">
-                  <CardBody className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold flex items-center gap-2">
-                        <Bookmark className="text-purple-500" size={18} />
-                        Flashcards
-                      </h3>
-                      <Button
-                        variant="light"
-                        size="sm"
-                        onPress={() => setActiveTab("flashcards")}
-                      >
-                        View All
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {studyMaterials
-                        .filter((m) => m.type === "flashcard")
-                        .slice(0, 2)
-                        .map((deck) => (
-                          <div
-                            key={deck.id}
-                            className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                          >
-                            <div className="flex justify-between items-start">
-                              <h4 className="font-medium">{deck.title}</h4>
-                              <Chip size="sm" variant="flat">
-                                {deck.course}
-                              </Chip>
-                            </div>
-                            <div className="flex items-center justify-between mt-3">
-                              <span className="text-sm text-gray-500">
-                                {deck.mastered}/{deck.cards} mastered
-                              </span>
-                              <Progress
-                                size="sm"
-                                value={(deck.mastered / deck.cards) * 100}
-                                color="secondary"
-                                className="max-w-[100px]"
-                              />
-                            </div>
-                            <div className="text-xs text-gray-400 mt-2">
-                              Last reviewed: {deck.lastReviewed}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </CardBody>
-                </Card>
-
-                {/* Past Questions Preview */}
-                <Card className="border border-gray-200">
-                  <CardBody className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold flex items-center gap-2">
-                        <FileSpreadsheet className="text-green-500" size={18} />
-                        Past Questions
-                      </h3>
-                      <Button
-                        variant="light"
-                        size="sm"
-                        onPress={() => setActiveTab("pastQuestions")}
-                      >
-                        View All
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {studyMaterials
-                        .filter((m) => m.type === "pastQuestion")
-                        .slice(0, 2)
-                        .map((pq) => (
-                          <div
-                            key={pq.id}
-                            className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                          >
-                            <div className="flex justify-between items-start">
-                              <h4 className="font-medium">{pq.title}</h4>
-                              <Chip size="sm" variant="flat">
-                                {pq.course}
-                              </Chip>
-                            </div>
-                            <div className="flex items-center gap-4 mt-3">
-                              <span className="text-sm text-gray-500">
-                                {pq.pages} pages
-                              </span>
-                              <span className="text-sm text-gray-500">
-                                {pq.year}
-                              </span>
-                            </div>
-                            <div className="text-xs text-gray-400 mt-2">
-                              Downloaded {pq.downloads} times
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </CardBody>
-                </Card>
-              </div>
-            </>
+            <Overview
+              courses={courses}
+              studyMaterials={studyMaterials}
+              setActiveTab={setActiveTab}
+            />
           )}
           {/* Quizzes Tab */}
           {activeTab === "quizzes" && (
@@ -392,11 +138,8 @@ const MyCourses = () => {
             </div>
           )}
           {/* Flashcards Tab */}
-          {activeTab === "flashcards" && (
-            <Flashcards/>
-          )}
-          {/* Past Questions Tab */}
-          {activeTab === "pastQuestions" && <PastQuestions />}
+          {activeTab === "flashcards" && <Flashcards />}
+          
         </div>
       </DashboardLayout>
     </DefaultLayout>

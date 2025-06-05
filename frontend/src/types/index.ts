@@ -48,3 +48,96 @@ export interface PDFQuizGeneratorModalProps {
   }) => void;
   availableCourses: { id: string; name: string }[];
 }
+
+// types/course.ts
+export interface Course {
+  id: number;
+  title: string;
+  code: string;
+  progress: number;
+  instructor: string;
+  nextSession: string;
+  assignmentsDue: number;
+  resources: number;
+  color: string;
+  thumbnail: string;
+}
+
+export type StudyMaterialType = 'quiz' | 'flashcard' | 'pastQuestion';
+
+export interface StudyMaterial {
+  id: number;
+  course: string;
+  type: StudyMaterialType;
+  title: string;
+  questions?: number;
+  completed?: number;
+  dueDate?: string;
+  cards?: number;
+  mastered?: number;
+  lastReviewed?: string;
+  pages?: number;
+  downloads?: number;
+  year?: string;
+}
+
+export interface OverviewProps {
+  courses: Course[];
+  studyMaterials: StudyMaterial[];
+  setActiveTab: (tab: string) => void;
+}
+
+export interface FlashcardDeck {
+  id: string;
+  title: string;
+  course: string;
+  description: string;
+  cards_count: number;
+  mastered_count: number;
+  last_reviewed: string;
+  user_id: string;
+  created_at: string;
+}
+
+export interface Flashcard {
+  id: string;
+  deck_id: string;
+  front: string;
+  back: string;
+  is_mastered: boolean;
+  difficulty_level: number;
+  review_count: number;
+  last_reviewed: string;
+  created_at: string;
+}
+
+export interface DeckFormData {
+  title: string;
+  course: string;
+  description: string;
+}
+
+export interface CardFormData {
+  front: string;
+  back: string;
+}
+
+export interface LoadingState {
+  decks: boolean;
+  cards: boolean;
+  creating: boolean;
+  updating: boolean;
+}
+
+export interface StudyMaterialSectionProps {
+  title: string;
+  icon: React.ReactNode;
+  materials: StudyMaterial[];
+  courseKey: keyof StudyMaterial;
+  onViewAll: () => void;
+  progressKey?: keyof StudyMaterial;
+  totalKey?: keyof StudyMaterial;
+  showLastReviewed?: boolean;
+  showYear?: boolean;
+  showDownloads?: boolean;
+}

@@ -7,13 +7,16 @@ import { supabase } from "@/supabaseClient";
 interface PDFUploadStepProps {
   onUploadComplete: (url: string) => void;
   onError: (error: string) => void;
+  pdfFile: File | null;
+  setPdfFile: (file: File | null) => void;
 }
 
 export default function PDFUploadStep({
   onUploadComplete,
   onError,
+  pdfFile,
+  setPdfFile,
 }: PDFUploadStepProps) {
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);

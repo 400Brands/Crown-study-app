@@ -7,31 +7,15 @@ import PricingPage from "@/pages/pricing";
 import BlogPage from "@/pages/blog";
 import AboutPage from "@/pages/about";
 
-// Dashboard layout and index page
-// import DashboardLayout from "@/layouts/DashboardLayout";
-import DashboardPage from "@/pages/dashboard";
-
 // Main dashboard sections
 import MyCourses from "@/pages/dashboard/courses";
-// import NotesFeed from "@/pages/dashboard/notes";
-// import UploadCenter from "@/pages/dashboard/upload";
-// import FocusedMode from "@/pages/dashboard/focused-mode";
-// import GamesAnalytics from "@/pages/dashboard/analytics";
-// import Profile from "@/pages/dashboard/profile";
-// import Settings from "@/pages/dashboard/settings";
-// import Help from "@/pages/dashboard/help";
-
-// Course sub-pages
-// import CourseQuizzes from "@/pages/dashboard/courses/quizzes";
-// import CourseFlashcards from "@/pages/dashboard/courses/flashcards";
-// import CoursePastQuestions from "@/pages/dashboard/courses/past-questions";
-import DashboardLayout from "./layouts/dashboardLayout";
 import IndexDashboard from "@/pages/dashboard";
-import StudyLibrary from "./pages/dashboard/studyLibrary";
 import StudyPlanner from "./pages/dashboard/studyPlanner";
 import GameMode from "./pages/dashboard/gameMode";
 import CourseQuizzes from "./pages/dashboard/courses/quizzes";
 import QuizTaking from "./pages/dashboard/courses/QuizTaking";
+import StudyLibrary from "./pages/dashboard/studyLibrary";
+
 
 function App() {
   return (

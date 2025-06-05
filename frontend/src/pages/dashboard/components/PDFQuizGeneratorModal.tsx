@@ -23,6 +23,8 @@ export default function PDFQuizGeneratorModal({
   const [step, setStep] = useState<number>(1);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+
 
   const handleUploadComplete = (url: string) => {
     setPdfUrl(url);
@@ -108,13 +110,16 @@ export default function PDFQuizGeneratorModal({
           {step === 1 && (
             <PDFUploadStep
               onUploadComplete={handleUploadComplete}
+              pdfFile={pdfFile}
+              setPdfFile={setPdfFile}
               onError={handleError}
             />
           )}
 
           {step === 2 && pdfUrl && (
             <QuizConfigStep
-              pdfUrl={pdfUrl}
+              pdfUrl=""
+              pdfFile={pdfFile}
               availableCourses={availableCourses}
               onQuizGenerated={handleQuizGenerated}
               onError={handleError}

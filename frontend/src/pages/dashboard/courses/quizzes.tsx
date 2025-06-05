@@ -1,4 +1,3 @@
-// src/pages/dashboard/courses/quizzes.tsx
 import { useEffect, useState } from "react";
 import {
   Card,
@@ -28,7 +27,6 @@ type Quiz = {
   user_id?: string;
 };
 
-
 type Course = {
   id: string;
   name: string;
@@ -38,6 +36,8 @@ const CourseQuizzes = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 6;
 
   const availableCourses: Course[] = [
     { id: "CSC101", name: "CSC 101: Introduction to Programming" },
@@ -59,11 +59,18 @@ const CourseQuizzes = () => {
 
         if (error) throw error;
 
-        // Transform data to match our Quiz type
-        const formattedQuizzes = data.map((quiz: any) => ({
-          ...quiz,
-          dueDate: quiz.due_date, // Keep backward compatibility
-        }));
+        // Transform data to match our Quiz type (removed dueDate field that wasn't in type)
+        const formattedQuizzes =
+          data?.map((quiz: any) => ({
+            id: quiz.id,
+            title: quiz.title,
+            course: quiz.course,
+            questions: quiz.questions,
+            completed: quiz.completed,
+            due_date: quiz.due_date,
+            status: quiz.status,
+            user_id: quiz.user_id,
+          })) || [];
 
         setQuizzes(formattedQuizzes);
       } catch (error) {
@@ -76,34 +83,6 @@ const CourseQuizzes = () => {
 
     fetchQuizzes();
   }, []);
-
-  const fetchQuizWithQuestions = async (quizId: string) => {
-    try {
-      const { data: quizData, error: quizError } = await supabase
-        .from("quizzes")
-        .select("*")
-        .eq("id", quizId)
-        .single();
-
-      if (quizError) throw quizError;
-
-      const { data: questionsData, error: questionsError } = await supabase
-        .from("quiz_questions")
-        .select("*")
-        .eq("quiz_id", quizId)
-        .order("order", { ascending: true });
-
-      if (questionsError) throw questionsError;
-
-      return {
-        ...quizData,
-        questions: questionsData,
-      };
-    } catch (error) {
-      console.error("Error fetching quiz with questions:", error);
-      throw error;
-    }
-  };
 
   const handleQuizGenerated = async (newQuiz: {
     title: string;
@@ -119,7 +98,10 @@ const CourseQuizzes = () => {
       // Get current user
       const {
         data: { user },
+        error: userError,
       } = await supabase.auth.getUser();
+
+      if (userError) throw userError;
       if (!user) throw new Error("User not authenticated");
 
       // Start transaction
@@ -148,11 +130,12 @@ const CourseQuizzes = () => {
         quiz_id: quizData.id,
         question_text: question.text, // Map from text to question_text for database
         options: question.options,
-        correct_answer_id: question.options.find((opt) => opt.isCorrect)?.id,
+        correct_answer_id:
+          question.options.find((opt) => opt.isCorrect)?.id || null,
         explanation: question.explanation,
         order: index,
       }));
-      
+
       // Save all questions
       const { error: questionsError } = await supabase
         .from("quiz_questions")
@@ -160,11 +143,17 @@ const CourseQuizzes = () => {
 
       if (questionsError) throw questionsError;
 
-      // Update local state with the new quiz
+      // Update local state with the new quiz (removed dueDate field)
       setQuizzes((prev) => [
         {
-          ...quizData,
-          dueDate: quizData.due_date, // Maintain backward compatibility
+          id: quizData.id,
+          title: quizData.title,
+          course: quizData.course,
+          questions: quizData.questions,
+          completed: quizData.completed,
+          due_date: quizData.due_date,
+          status: quizData.status,
+          user_id: quizData.user_id,
         },
         ...prev,
       ]);
@@ -174,6 +163,16 @@ const CourseQuizzes = () => {
     } finally {
       onClose();
     }
+  };
+
+  // Calculate pagination
+  const totalPages = Math.ceil(quizzes.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentQuizzes = quizzes.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   if (loading) {
@@ -187,7 +186,7 @@ const CourseQuizzes = () => {
   return (
     <div className="space-y-6 min-h-screen">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <FileText className="text-blue-500" size={20} />
@@ -217,7 +216,7 @@ const CourseQuizzes = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {quizzes.map((quiz) => (
+            {currentQuizzes.map((quiz) => (
               <Card
                 key={quiz.id}
                 className="border border-gray-200 hover:shadow-md transition-shadow"
@@ -251,7 +250,11 @@ const CourseQuizzes = () => {
                   <div className="my-4">
                     <Progress
                       aria-label="Quiz progress"
-                      value={(quiz.completed / quiz.questions) * 100}
+                      value={
+                        quiz.questions > 0
+                          ? (quiz.completed / quiz.questions) * 100
+                          : 0
+                      }
                       classNames={{
                         indicator:
                           "bg-gradient-to-r from-blue-500 to-indigo-600",
@@ -262,7 +265,10 @@ const CourseQuizzes = () => {
                         {quiz.completed}/{quiz.questions} completed
                       </span>
                       <span className="font-medium">
-                        {Math.round((quiz.completed / quiz.questions) * 100)}%
+                        {quiz.questions > 0
+                          ? Math.round((quiz.completed / quiz.questions) * 100)
+                          : 0}
+                        %
                       </span>
                     </div>
                   </div>
@@ -292,10 +298,16 @@ const CourseQuizzes = () => {
             ))}
           </div>
 
-          {/* Pagination */}
-          <div className="flex justify-center mt-8">
-            <Pagination total={Math.ceil(quizzes.length / 6)} initialPage={1} />
-          </div>
+          {/* Pagination - Only show if there are multiple pages */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-8">
+              <Pagination
+                total={totalPages}
+                page={currentPage}
+                onChange={handlePageChange}
+              />
+            </div>
+          )}
         </>
       )}
 

@@ -1,6 +1,6 @@
 //@ts-nocheck
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardBody,
@@ -30,10 +30,33 @@ import {
 import { supabase } from "@/supabaseClient";
 import DefaultLayout from "@/layouts/default";
 import DashboardLayout from "@/layouts/dashboardLayout";
-import UploadModal from "./studyLibrary/uploadModal";
 
-const StudyLibraryT = () => {
-  const [resources, setResources] = useState([]);
+interface Resource {
+  id: string;
+  title: string;
+  type: string;
+  course: string;
+  year: string;
+  description?: string;
+  file_url?: string;
+  file_size?: number;
+  pages?: number;
+  duration?: string;
+  is_new: boolean;
+  is_featured?: boolean;
+  rating: number;
+  downloads: number;
+  created_at: string;
+}
+
+interface ResourceType {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+}
+
+const StudyLibrary: React.FC = () => {
+  const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
@@ -43,7 +66,7 @@ const StudyLibraryT = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const itemsPerPage = 6;
 
-  const resourceTypes = [
+  const resourceTypes: ResourceType[] = [
     { label: "All Resources", value: "all", icon: <LibraryBig size={16} /> },
     { label: "Textbooks", value: "textbook", icon: <BookOpen size={16} /> },
     { label: "Lecture Notes", value: "notes", icon: <FileText size={16} /> },
@@ -59,7 +82,7 @@ const StudyLibraryT = () => {
     },
   ];
 
-  const courses = [
+  const courses: string[] = [
     "CSC 101",
     "CSC 201",
     "CSC 301",
@@ -69,7 +92,7 @@ const StudyLibraryT = () => {
   ];
 
   // Fetch resources from Supabase
-  const fetchResources = async () => {
+  const fetchResources = async (): Promise<void> => {
     try {
       setLoading(true);
       let query = supabase
@@ -94,7 +117,7 @@ const StudyLibraryT = () => {
       if (error) throw error;
 
       // Sort the data
-      let sortedData = [...(data || [])];
+      let sortedData: Resource[] = [...(data || [])];
       switch (sortBy) {
         case "recent":
           sortedData.sort(
@@ -119,7 +142,7 @@ const StudyLibraryT = () => {
   };
 
   // Handle download (increment counter)
-  const handleDownload = async (resourceId, currentDownloads) => {
+  const handleDownload = async (resourceId: string, currentDownloads: number): Promise<void> => {
     try {
       await supabase
         .from("resources")
@@ -133,7 +156,7 @@ const StudyLibraryT = () => {
   };
 
   // Handle successful upload
-  const handleUploadSuccess = () => {
+  const handleUploadSuccess = (): void => {
     setIsUploadModalOpen(false);
     fetchResources();
   };
@@ -145,15 +168,15 @@ const StudyLibraryT = () => {
   // Pagination
   const totalPages = Math.ceil(resources.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedResources = resources.slice(
+  const paginatedResources: Resource[] = resources.slice(
     startIndex,
     startIndex + itemsPerPage
   );
 
-  const featuredResources = resources.filter((r) => r.is_featured);
+  const featuredResources: Resource[] = resources.filter((r) => r.is_featured);
 
   // Placeholder image URL
-  const placeholderImage =
+  const placeholderImage: string =
     "https://imgs.search.brave.com/vXmnKh72ckf3x4CjZY4NAekzxi0I4dZGwGOo3xTceNY/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9sZWFy/bmluZy5vcmVpbGx5/LmNvbS9jb3ZlcnMv/dXJuOm9ybTpib29r/Ojk3ODEwOTgxNTI2/MDQvNDAwdy8";
 
   return (
@@ -202,11 +225,11 @@ const StudyLibraryT = () => {
                     <BookOpen size={18} className="text-gray-400" />
                   }
                 >
-                  <SelectItem key="all" >
+                  <SelectItem key="all">
                     All Courses
                   </SelectItem>
                   {courses.map((course) => (
-                    <SelectItem key={course} value={course}>
+                    <SelectItem key={course} >
                       {course}
                     </SelectItem>
                   ))}
@@ -222,7 +245,6 @@ const StudyLibraryT = () => {
                   {resourceTypes.map((type) => (
                     <SelectItem
                       key={type.value}
-                      value={type.value}
                       startContent={type.icon}
                     >
                       {type.label}
@@ -468,4 +490,4 @@ const StudyLibraryT = () => {
   );
 };
 
-export default StudyLibraryT;
+export default StudyLibrary;

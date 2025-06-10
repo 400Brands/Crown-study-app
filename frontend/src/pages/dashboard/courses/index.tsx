@@ -1,10 +1,5 @@
 //@ts-nocheck
-import {
-  
-  Tabs,
-  Tab,
-  
-} from "@heroui/react";
+import { Tabs, Tab } from "@heroui/react";
 
 import DashboardLayout from "@/layouts/dashboardLayout";
 import DefaultLayout from "@/layouts/default";
@@ -139,7 +134,6 @@ const MyCourses = () => {
           )}
           {/* Flashcards Tab */}
           {activeTab === "flashcards" && <Flashcards />}
-          
         </div>
       </DashboardLayout>
     </DefaultLayout>

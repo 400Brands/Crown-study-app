@@ -401,7 +401,7 @@ const StudyLibrary: React.FC = () => {
                                   <Chip
                                     size="sm"
                                     color="success"
-                                    className="absolute -top-2 -right-2"
+                                    className="absolute -top-2 -right-2 "
                                   >
                                     NEW
                                   </Chip>

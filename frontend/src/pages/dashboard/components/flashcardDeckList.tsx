@@ -1,10 +1,9 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useRef } from "react";
 import {
   Card,
   CardBody,
   Button,
   Progress,
-  Chip,
   Divider,
   Spinner,
   Modal,
@@ -14,45 +13,34 @@ import {
   ModalFooter,
   useDisclosure,
   Input,
+  Textarea,
   Select,
   SelectItem,
-  Textarea,
 } from "@heroui/react";
-import { Plus, Brain, Bookmark, Sparkles } from "lucide-react";
+import {
+  Plus,
+  Brain,
+  Bookmark,
+  Sparkles,
+  Upload,
+  FileText,
+} from "lucide-react";
+import { DeckFormData, FlashcardDeck } from "@/types";
 
-interface FlashcardDeck {
-  id: string;
-  title: string;
-  course: string;
-  description: string;
-  cards_count: number;
-  mastered_count: number;
-  last_reviewed: string;
-  user_id: string;
-  created_at: string;
-}
+// Import PDF.js
+import * as pdfjsLib from "pdfjs-dist";
+import "pdfjs-dist/build/pdf.worker.entry";
 
-interface DeckFormData {
-  title: string;
-  course: string;
-  description: string;
-}
+
 
 interface FlashcardDeckListProps {
   decks: FlashcardDeck[];
   loading: boolean;
   error?: string | null;
   onSelectDeck: (deck: FlashcardDeck) => void;
-  onCreateDeck: (deckData: DeckFormData) => Promise<void>;
+  onCreateDeck: (deckData: DeckFormData) => void;
   onRefresh?: () => void;
 }
-
-const courses = [
-  { key: "CSC 101", label: "CSC 101: Introduction to Programming" },
-  { key: "CSC 201", label: "CSC 201: Data Structures & Algorithms" },
-  { key: "CSC 301", label: "CSC 301: Database Systems" },
-  { key: "CSC 305", label: "CSC 305: Artificial Intelligence" },
-];
 
 const FlashcardDeckList: React.FC<FlashcardDeckListProps> = ({
   decks,
@@ -64,10 +52,15 @@ const FlashcardDeckList: React.FC<FlashcardDeckListProps> = ({
 }) => {
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [extractingPdf, setExtractingPdf] = useState(false);
+  const [pdfFileName, setPdfFileName] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [deckForm, setDeckForm] = useState<DeckFormData>({
     title: "",
-    course: "CSC 101",
     description: "",
+    pdfText: "",
+    cardCount: 5,
   });
 
   const {
@@ -75,6 +68,70 @@ const FlashcardDeckList: React.FC<FlashcardDeckListProps> = ({
     onOpen: onDeckModalOpen,
     onClose: onDeckModalClose,
   } = useDisclosure();
+
+  const cardCountOptions = [
+    { value: 5, label: "5 cards" },
+    { value: 10, label: "10 cards" },
+    { value: 15, label: "15 cards" },
+    { value: 20, label: "20 cards" },
+    { value: 25, label: "25 cards" },
+  ];
+
+  const extractTextFromPDF = useCallback(
+    async (file: File): Promise<string> => {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = "";
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items
+            .map((item: any) => item.str)
+            .join(" ");
+          fullText += pageText + "\n";
+        }
+
+        return fullText.trim();
+      } catch (error) {
+        throw new Error("Failed to extract text from PDF");
+      }
+    },
+    []
+  );
+
+  const handleFileUpload = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      if (file.type !== "application/pdf") {
+        setFormError("Please select a PDF file");
+        return;
+      }
+
+      setExtractingPdf(true);
+      setFormError(null);
+      setPdfFileName(file.name);
+
+      try {
+        const extractedText = await extractTextFromPDF(file);
+        setDeckForm((prev) => ({
+          ...prev,
+          pdfText: extractedText,
+          title: prev.title || file.name.replace(".pdf", ""),
+          description: prev.description || `Generated from ${file.name}`,
+        }));
+      } catch (error) {
+        setFormError("Failed to extract text from PDF. Please try again.");
+        setPdfFileName("");
+      } finally {
+        setExtractingPdf(false);
+      }
+    },
+    [extractTextFromPDF]
+  );
 
   const handleCreateDeck = useCallback(async () => {
     if (!deckForm.title.trim()) {
@@ -85,15 +142,31 @@ const FlashcardDeckList: React.FC<FlashcardDeckListProps> = ({
     try {
       setCreating(true);
       setFormError(null);
+
       await onCreateDeck(deckForm);
+
       onDeckModalClose();
-      setDeckForm({ title: "", course: "CSC 101", description: "" });
+      setDeckForm({ title: "", description: "", pdfText: "", cardCount: 5 });
+      setPdfFileName("");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (error) {
       setFormError("Failed to create deck");
     } finally {
       setCreating(false);
     }
   }, [deckForm, onCreateDeck, onDeckModalClose]);
+
+  const handleModalClose = useCallback(() => {
+    onDeckModalClose();
+    setDeckForm({ title: "", description: "", pdfText: "", cardCount: 5 });
+    setPdfFileName("");
+    setFormError(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, [onDeckModalClose]);
 
   const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString(undefined, {
@@ -121,7 +194,7 @@ const FlashcardDeckList: React.FC<FlashcardDeckListProps> = ({
           </h2>
           <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
             <Sparkles size={16} className="text-yellow-500" />
-            Each deck comes with 5 AI-generated flashcards
+            Create decks with AI-generated flashcards
           </p>
         </div>
         <Button
@@ -159,7 +232,7 @@ const FlashcardDeckList: React.FC<FlashcardDeckListProps> = ({
               </div>
               <h3 className="text-lg font-medium">No flashcard decks yet</h3>
               <p className="text-default-600 max-w-md mx-auto">
-                Create your first deck and get started with 5 automatically
+                Create your first deck and get started with automatically
                 generated flashcards tailored to your course content.
               </p>
               <Button
@@ -193,14 +266,6 @@ const FlashcardDeckList: React.FC<FlashcardDeckListProps> = ({
                     <h3 className="font-semibold text-lg line-clamp-2">
                       {deck.title}
                     </h3>
-                    <Chip
-                      size="sm"
-                      variant="flat"
-                      color="secondary"
-                      className="ml-2 flex-shrink-0"
-                    >
-                      {deck.course}
-                    </Chip>
                   </div>
 
                   <p className="text-sm text-default-600 mb-4 line-clamp-2 min-h-[2.5rem]">
@@ -247,31 +312,59 @@ const FlashcardDeckList: React.FC<FlashcardDeckListProps> = ({
         </div>
       )}
 
-      <Modal isOpen={isDeckModalOpen} onClose={onDeckModalClose}>
+      <Modal isOpen={isDeckModalOpen} onClose={handleModalClose} size="2xl">
         <ModalContent>
           <ModalHeader className="text-lg font-semibold flex items-center gap-2">
             <Sparkles size={20} className="text-yellow-500" />
             Create Flashcard Deck
           </ModalHeader>
           <ModalBody>
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Brain size={16} className="text-purple-600" />
-                <span className="text-sm font-medium text-purple-800">
-                  AI-Powered Generation
-                </span>
-              </div>
-              <p className="text-xs text-purple-700">
-                Your new deck will automatically include 5 course-specific
-                flashcards generated by AI to help you get started immediately.
-              </p>
-            </div>
-
             {formError && (
               <div className="text-danger-500 mb-4 text-sm">{formError}</div>
             )}
 
             <div className="space-y-4">
+              {/* PDF Upload Section */}
+              <div className="border-2 border-dashed border-default-300 rounded-lg p-6">
+                <div className="text-center">
+                  <FileText
+                    size={32}
+                    className="mx-auto text-default-400 mb-2"
+                  />
+                  <h4 className="font-medium mb-2">Upload PDF (Optional)</h4>
+                  <p className="text-sm text-default-600 mb-4">
+                    Upload course materials to generate more relevant flashcards
+                  </p>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="pdf-upload"
+                  />
+
+                  <Button
+                    color="secondary"
+                    variant="bordered"
+                    startContent={<Upload size={16} />}
+                    onPress={() => fileInputRef.current?.click()}
+                    isDisabled={extractingPdf}
+                    isLoading={extractingPdf}
+                  >
+                    {extractingPdf ? "Extracting..." : "Choose PDF File"}
+                  </Button>
+
+                  {pdfFileName && (
+                    <div className="mt-3 text-sm text-success-600 flex items-center justify-center gap-2">
+                      <FileText size={16} />
+                      <span>✓ {pdfFileName}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <Input
                 label="Deck Title"
                 value={deckForm.title}
@@ -281,18 +374,7 @@ const FlashcardDeckList: React.FC<FlashcardDeckListProps> = ({
                 placeholder="e.g., Data Structures Terms"
                 isRequired
               />
-              <Select
-                label="Course"
-                selectedKeys={[deckForm.course]}
-                onChange={(e) =>
-                  setDeckForm({ ...deckForm, course: e.target.value })
-                }
-                isRequired
-              >
-                {courses.map((course) => (
-                  <SelectItem key={course.key}>{course.label}</SelectItem>
-                ))}
-              </Select>
+
               <Textarea
                 label="Description (Optional)"
                 value={deckForm.description}
@@ -301,12 +383,49 @@ const FlashcardDeckList: React.FC<FlashcardDeckListProps> = ({
                 }
                 placeholder="Brief description of this deck"
               />
+
+              <Select
+                label="Number of Cards"
+                placeholder="Select number of cards to generate"
+                selectedKeys={[deckForm.cardCount.toString()]}
+                onChange={(e) =>
+                  setDeckForm({
+                    ...deckForm,
+                    cardCount: parseInt(e.target.value),
+                  })
+                }
+                classNames={{
+                  trigger: "min-h-unit-12",
+                }}
+              >
+                {cardCountOptions.map((option) => (
+                  <SelectItem
+                    key={option.value.toString()}
+                  >
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </Select>
+
+              {deckForm.pdfText && (
+                <div className="bg-default-100 p-3 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText size={16} className="text-success-600" />
+                    <span className="text-sm font-medium">
+                      PDF Content Extracted
+                    </span>
+                  </div>
+                  <p className="text-xs text-default-600">
+                    {deckForm.pdfText.length} characters extracted from PDF
+                  </p>
+                </div>
+              )}
             </div>
           </ModalBody>
           <ModalFooter>
             <Button
               variant="light"
-              onPress={onDeckModalClose}
+              onPress={handleModalClose}
               isDisabled={creating}
             >
               Cancel
@@ -318,7 +437,9 @@ const FlashcardDeckList: React.FC<FlashcardDeckListProps> = ({
               isLoading={creating}
               startContent={!creating && <Sparkles size={16} />}
             >
-              {creating ? "Generating..." : "Create with AI Cards"}
+              {creating
+                ? "Generating..."
+                : `Create ${deckForm.cardCount} AI Cards`}
             </Button>
           </ModalFooter>
         </ModalContent>

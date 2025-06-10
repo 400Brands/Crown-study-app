@@ -1,129 +1,129 @@
 //@ts-nocheck
 
 import React, { useState, useEffect } from "react";
-import {
-  Spinner,
-} from "@heroui/react";
+import { Spinner } from "@heroui/react";
 import { supabase } from "@/supabaseClient";
 import FlashcardViewer from "../components/flashcardViewer";
 import FlashcardDeckList from "../components/flashcardDeckList";
-import { CardFormData, DeckFormData, Flashcard, FlashcardDeck } from "@/types";
+import { DeckFormData, Flashcard, FlashcardDeck } from "@/types";
+import { GoogleGenAI } from "@google/genai";
 
-// Enhanced AI flashcard generation with course-specific content
+const apiKey = "AIzaSyDouCzIB0-ZRJyLL38nhNsiXavYmNvJQkw";
+
+// Initialize Google GenAI
+const ai = new GoogleGenAI({
+  apiKey,
+});
+
 const generateAIFlashcards = async (
   deckTitle: string,
-  course: string,
-  count = 5
-) => {
-  console.log(
-    `Generating ${count} AI flashcards for: ${deckTitle} (${course})`
-  );
+  pdfText: string,
+  cardCount: number
+): Promise<Flashcard[]> => {
+  try {
+    const prompt = `You are an expert flashcard generator. Create ${cardCount} high-quality flashcards based on the following content.
+    
+Deck Title: ${deckTitle}
+Content: ${pdfText || "General knowledge about " + deckTitle}
 
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+CRITICAL FORMATTING REQUIREMENTS:
+1. Return ONLY a valid JSON array - no explanatory text before or after
+2. Each flashcard object must have this EXACT structure:
+{
+  "front": "question or term here",
+  "back": "answer or definition here"
+}
 
-  // Course-specific question templates
-  const questionTemplates = {
-    "CSC 101": [
-      {
-        front: `What is a variable in ${deckTitle}?`,
-        back: `A variable is a storage location with an associated name that contains data which can be modified during program execution.`,
-      },
-      {
-        front: `Explain the concept of loops in ${deckTitle}`,
-        back: `Loops are control structures that repeat a block of code multiple times based on a condition.`,
-      },
-      {
-        front: `What is the difference between syntax and semantics?`,
-        back: `Syntax refers to the rules of the language structure, while semantics refers to the meaning of the code.`,
-      },
-      {
-        front: `Define algorithm in the context of ${deckTitle}`,
-        back: `An algorithm is a step-by-step procedure for solving a problem or completing a task.`,
-      },
-      {
-        front: `What is debugging?`,
-        back: `Debugging is the process of finding and fixing errors or bugs in computer programs.`,
-      },
-    ],
-    "CSC 201": [
-      {
-        front: `What is Big O notation in ${deckTitle}?`,
-        back: `Big O notation describes the upper bound of time complexity, representing how algorithm performance scales with input size.`,
-      },
-      {
-        front: `Explain the difference between Array and Linked List`,
-        back: `Arrays have contiguous memory and O(1) access, while Linked Lists have dynamic memory and O(n) access but efficient insertion/deletion.`,
-      },
-      {
-        front: `What is a Stack data structure?`,
-        back: `A Stack is a LIFO (Last In, First Out) data structure where elements are added and removed from the same end (top).`,
-      },
-      {
-        front: `Define Binary Search Tree`,
-        back: `A BST is a tree where left child values are less than parent, and right child values are greater than parent.`,
-      },
-      {
-        front: `What is the time complexity of Quick Sort?`,
-        back: `Quick Sort has average case O(n log n) and worst case O(n²) time complexity.`,
-      },
-    ],
-    "CSC 301": [
-      {
-        front: `What is normalization in ${deckTitle}?`,
-        back: `Database normalization is the process of organizing data to reduce redundancy and improve data integrity.`,
-      },
-      {
-        front: `Explain ACID properties`,
-        back: `ACID stands for Atomicity, Consistency, Isolation, and Durability - key properties ensuring reliable database transactions.`,
-      },
-      {
-        front: `What is a Primary Key?`,
-        back: `A Primary Key is a unique identifier for each record in a database table, ensuring no duplicate rows.`,
-      },
-      {
-        front: `Define SQL JOIN operations`,
-        back: `JOINs combine rows from multiple tables based on related columns - INNER, LEFT, RIGHT, and FULL OUTER.`,
-      },
-      {
-        front: `What is an Index in databases?`,
-        back: `An Index is a data structure that improves query performance by creating shortcuts to data locations.`,
-      },
-    ],
-    "CSC 305": [
-      {
-        front: `What is Machine Learning in ${deckTitle}?`,
-        back: `Machine Learning is a subset of AI that enables systems to learn and improve from data without explicit programming.`,
-      },
-      {
-        front: `Explain the difference between supervised and unsupervised learning`,
-        back: `Supervised learning uses labeled data for training, while unsupervised learning finds patterns in unlabeled data.`,
-      },
-      {
-        front: `What is a Neural Network?`,
-        back: `A Neural Network is a computing system inspired by biological neural networks, consisting of interconnected nodes (neurons).`,
-      },
-      {
-        front: `Define Natural Language Processing`,
-        back: `NLP is a branch of AI that helps computers understand, interpret, and generate human language.`,
-      },
-      {
-        front: `What is the Turing Test?`,
-        back: `The Turing Test evaluates a machine's ability to exhibit intelligent behavior indistinguishable from a human.`,
-      },
-    ],
-  };
+3. Ensure proper JSON syntax - use double quotes, proper commas, no trailing commas
+4. Questions should be specific and test understanding
+5. Answers should be concise but complete
+6. Cover key concepts from the content
 
-  // Get templates for the specific course, or use generic ones
-  const templates = questionTemplates[course] || questionTemplates["CSC 101"];
+Generate the JSON array now:`;
 
-  // Generate flashcards with some randomization
-  return templates.slice(0, count).map((template, i) => ({
-    front: template.front,
-    back: template.back,
-    is_mastered: false,
-    difficulty_level: Math.floor(Math.random() * 3) + 2, // Random difficulty 2-4
-  }));
+    // Use the same API pattern as the working function
+    const response = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: prompt,
+    });
+
+    // Access the text property directly like in the working function
+    const text = response.text;
+
+    // Check if text is defined and not empty
+    if (!text || typeof text !== "string") {
+      throw new Error("No text content received from AI service");
+    }
+
+    console.log("AI Response:", text); // Debug log
+
+    // Clean and parse JSON using similar logic to the working function
+    let jsonString = text.trim();
+
+    // Remove any markdown formatting
+    jsonString = jsonString.replace(/```json\n?/g, "").replace(/```\n?/g, "");
+
+    // Find JSON array bounds
+    const jsonStart = jsonString.indexOf("[");
+    const jsonEnd = jsonString.lastIndexOf("]") + 1;
+
+    if (jsonStart === -1 || jsonEnd === 0) {
+      throw new Error("No valid JSON array found in AI response");
+    }
+
+    jsonString = jsonString.slice(jsonStart, jsonEnd);
+
+    try {
+      const parsedCards = JSON.parse(jsonString) as Flashcard[];
+
+      // Validate that we have an array
+      if (!Array.isArray(parsedCards)) {
+        throw new Error(
+          "Expected an array of flashcards but got something else."
+        );
+      }
+
+      // Validate and format flashcards similar to the working function
+      const validatedCards = parsedCards
+        .map((card, index) => {
+          // Ensure card has required properties
+          if (!card || typeof card !== "object") {
+            console.warn(`Card ${index} is not a valid object, skipping`);
+            return null;
+          }
+
+          return {
+            front: card.front || `Question ${index + 1}`,
+            back: card.back || `Answer ${index + 1}`,
+          };
+        })
+        .filter(
+          (card) =>
+            card !== null && card.front.trim() !== "" && card.back.trim() !== ""
+        );
+
+      if (validatedCards.length === 0) {
+        throw new Error(
+          "No valid flashcards were generated. Please try again."
+        );
+      }
+
+      console.log("Successfully generated flashcards:", validatedCards);
+      return validatedCards;
+    } catch (parseError) {
+      console.error("JSON parsing error:", parseError);
+      console.error("Attempted to parse:", jsonString);
+      throw new Error(
+        "The AI returned an invalid JSON format. Please try again."
+      );
+    }
+  } catch (error) {
+    console.error("AI generation error:", error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("Failed to generate flashcards. Please try again.");
+  }
 };
 
 const Flashcards: React.FC = () => {
@@ -135,119 +135,132 @@ const Flashcards: React.FC = () => {
     cards: false,
     aiGenerating: false,
   });
-  const [cardForm, setCardForm] = useState<CardFormData>({
-    front: "",
-    back: "",
-  });
+  const [error, setError] = useState<string | null>(null);
 
+  const loadDecks = async () => {
+    setLoading((prev) => ({ ...prev, decks: true }));
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from("decks")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setDecks(data || []);
+    } catch (err) {
+      setError("Failed to load decks. Please try again.");
+      console.error("Load decks error:", err);
+    } finally {
+      setLoading((prev) => ({ ...prev, decks: false }));
+    }
+  };
+
+  const loadCards = async (deckId: string) => {
+    setLoading((prev) => ({ ...prev, cards: true }));
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from("cards")
+        .select("*")
+        .eq("deck_id", deckId);
+
+      if (error) throw error;
+      setCards(data || []);
+    } catch (err) {
+      setError("Failed to load cards. Please try again.");
+      console.error("Load cards error:", err);
+    } finally {
+      setLoading((prev) => ({ ...prev, cards: false }));
+    }
+  };
 
   // Load decks on mount
   useEffect(() => {
-    const loadDecks = async () => {
-      setLoading((prev) => ({ ...prev, decks: true }));
-      try {
-        const { data, error } = await supabase
-          .from("decks")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-        setDecks(data || []);
-      } finally {
-        setLoading((prev) => ({ ...prev, decks: false }));
-      }
-    };
     loadDecks();
   }, []);
 
   // Load cards when deck is selected
   useEffect(() => {
-    if (!currentDeck) return;
-
-    const loadCards = async () => {
-      setLoading((prev) => ({ ...prev, cards: true }));
-      try {
-        const { data, error } = await supabase
-          .from("cards")
-          .select("*")
-          .eq("deck_id", currentDeck.id);
-
-        if (error) throw error;
-        setCards(data || []);
-      } finally {
-        setLoading((prev) => ({ ...prev, cards: false }));
-      }
-    };
-    loadCards();
+    if (currentDeck) {
+      loadCards(currentDeck.id);
+    }
   }, [currentDeck]);
 
   const handleCreateDeck = async (deckData: DeckFormData) => {
     try {
       setLoading((prev) => ({ ...prev, aiGenerating: true }));
+      setError(null);
 
-      // 1. Verify authentication
+      // Verify authentication
       const {
         data: { user },
+        error: authError,
       } = await supabase.auth.getUser();
+      if (authError) throw authError;
       if (!user) throw new Error("Not authenticated");
 
-      // 2. Create the deck
+      // Generate AI flashcards first
+      const aiCards = await generateAIFlashcards(
+        deckData.title,
+        deckData.pdfText || "",
+        deckData.cardCount
+      );
+
+      console.log("Generated cards:", aiCards); // Debug log
+
+      // Create the deck with accurate card count
       const { data: newDeck, error: deckError } = await supabase
         .from("decks")
-        .insert([
-          {
-            ...deckData,
-            user_id: user.id,
-          },
-        ])
+        .insert({
+          title: deckData.title,
+          description: deckData.description,
+          user_id: user.id,
+          cards_count: aiCards.length,
+          mastered_count: 0,
+          course: "general", // Provide default if needed
+        })
         .select()
         .single();
 
-      if (deckError) throw deckError;
+      if (deckError) {
+        console.error("Deck creation error details:", deckError);
+        throw deckError;
+      }
 
-      // 3. Generate AI flashcards
-      const aiCards = await generateAIFlashcards(
-        deckData.title,
-        deckData.course,
-        5
-      );
+      console.log("Created deck:", newDeck); // Debug log
 
-      // 4. Insert the generated cards
+      // Insert the generated cards
       const cardsToInsert = aiCards.map((card) => ({
         ...card,
         deck_id: newDeck.id,
+        is_mastered: false,
+        difficulty_level: 1,
+        review_count: 0,
+        created_at: new Date().toISOString(),
       }));
+
+      console.log("Cards to insert:", cardsToInsert); // Debug log
 
       const { error: cardsError } = await supabase
         .from("cards")
         .insert(cardsToInsert);
 
-      if (cardsError) throw cardsError;
+      if (cardsError) {
+        console.error("Cards insertion error details:", cardsError);
+        throw cardsError;
+      }
 
-      // 5. Update deck with card count
-      const { error: updateError } = await supabase
-        .from("decks")
-        .update({
-          cards_count: aiCards.length,
-          mastered_count: 0,
-        })
-        .eq("id", newDeck.id);
+      // Update local state
+      setDecks((prev) => [newDeck, ...prev]);
+      setCurrentDeck(newDeck);
+      setCards(cardsToInsert);
 
-      if (updateError) throw updateError;
-
-      // 6. Update local state
-      const updatedDeck = {
-        ...newDeck,
-        cards_count: aiCards.length,
-        mastered_count: 0,
-      };
-
-      setDecks((prev) => [updatedDeck, ...prev]);
-
-      return updatedDeck;
-    } catch (error) {
-      console.error("Create deck error:", error);
-      throw error;
+      return newDeck;
+    } catch (err) {
+      console.error("Full error details:", err);
+      setError(err instanceof Error ? err.message : "Failed to create deck");
+      throw err;
     } finally {
       setLoading((prev) => ({ ...prev, aiGenerating: false }));
     }
@@ -261,7 +274,7 @@ const Flashcards: React.FC = () => {
     if (!currentDeck) return;
 
     try {
-      // Get current card state
+      setError(null);
       const currentCard = cards.find((card) => card.id === cardId);
       if (!currentCard) return;
 
@@ -283,12 +296,12 @@ const Flashcards: React.FC = () => {
       // Calculate mastery count change
       let masteryChange = 0;
       if (isMastered && !wasAlreadyMastered) {
-        masteryChange = 1; // Card became mastered
+        masteryChange = 1;
       } else if (!isMastered && wasAlreadyMastered) {
-        masteryChange = -1; // Card became unmastered
+        masteryChange = -1;
       }
 
-      // Update deck mastery count only if there's a change
+      // Update deck mastery count if changed
       if (masteryChange !== 0) {
         const newMasteredCount = Math.max(
           0,
@@ -305,15 +318,9 @@ const Flashcards: React.FC = () => {
 
         if (deckError) throw deckError;
 
-        // Update local deck state
+        // Update local state
         setCurrentDeck((prev) =>
-          prev
-            ? {
-                ...prev,
-                mastered_count: newMasteredCount,
-                last_reviewed: new Date().toISOString(),
-              }
-            : null
+          prev ? { ...prev, mastered_count: newMasteredCount } : null
         );
       }
 
@@ -331,9 +338,9 @@ const Flashcards: React.FC = () => {
             : card
         )
       );
-    } catch (error) {
-      console.error("Error updating card mastery:", error);
-      // You might want to show a toast or error message to the user here
+    } catch (err) {
+      setError("Failed to update card. Please try again.");
+      console.error("Error updating card mastery:", err);
     }
   };
 
@@ -344,12 +351,7 @@ const Flashcards: React.FC = () => {
           <div className="bg-white p-8 rounded-lg text-center max-w-sm mx-4">
             <Spinner size="lg" className="mb-4" />
             <h3 className="text-lg font-semibold mb-2">Creating Your Deck</h3>
-            <p className="text-gray-600">
-              Generating 5 AI-powered flashcards...
-            </p>
-            <div className="mt-4 text-sm text-gray-500">
-              This usually takes a few seconds
-            </div>
+            <p className="text-gray-600">Generating AI-powered flashcards...</p>
           </div>
         </div>
       )}
@@ -359,18 +361,19 @@ const Flashcards: React.FC = () => {
           deck={currentDeck}
           cards={cards}
           loading={loading.cards}
+          error={error}
           onBack={() => setCurrentDeck(null)}
           onMasterCard={handleMasterCard}
-          onAddCard={() => {
-            setCardForm({ front: "", back: "" });
-          }}
+          onRefresh={() => currentDeck && loadCards(currentDeck.id)}
         />
       ) : (
         <FlashcardDeckList
           decks={decks}
           loading={loading.decks}
+          error={error}
           onSelectDeck={setCurrentDeck}
           onCreateDeck={handleCreateDeck}
+          onRefresh={loadDecks}
         />
       )}
     </div>

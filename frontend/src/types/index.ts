@@ -111,10 +111,31 @@ export interface Flashcard {
   created_at: string;
 }
 
-export interface DeckFormData {
+// Define the StudySession interface - date is a Date object for client-side use
+export interface StudySession {
+  id: string;
   title: string;
   course: string;
+  date: Date; // Stored as string in DB, converted to Date object for React state
+  duration: number;
+  priority: "high" | "medium" | "low";
+  completed: boolean;
+  type: "revision" | "reading" | "assignment" | "practice";
+  created_at?: string;
+}
+
+export interface EditStudySessionModalProps {
+  isOpen: boolean;
+  onOpenChange: () => void;
+  session: StudySession | null;
+  onUpdateSession: (session: StudySession) => void;
+}
+
+export interface DeckFormData {
+  title: string;
+  pdfText?: string;
   description: string;
+  cardCount: number;
 }
 
 export interface CardFormData {

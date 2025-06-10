@@ -18,6 +18,7 @@ import {
   Brain,
   Target,
   Plus,
+  RefreshCw,
 } from "lucide-react";
 
 interface FlashcardDeck {
@@ -48,16 +49,17 @@ interface FlashcardViewerProps {
   deck: FlashcardDeck;
   cards: Flashcard[];
   loading: boolean;
-  error?: string | null; // Make optional
+  error?: string | null;
   onBack: () => void;
-  onEditCard?: (card: Flashcard) => void; // Make optional
-  onDeleteCard?: (cardId: string) => void; // Make optional
+  onEditCard?: (card: Flashcard) => void;
+  onDeleteCard?: (cardId: string) => void;
   onMasterCard?: (
     cardId: string,
     isMastered: boolean,
     difficulty?: number
-  ) => void; // Make optional
-  onAddCard: () => void;
+  ) => void;
+  onAddCard?: () => void;
+  onRefresh?: () => void;
 }
 
 type ReviewMode = "all" | "unmastered" | "random";
@@ -66,9 +68,11 @@ const FlashcardViewer: React.FC<FlashcardViewerProps> = ({
   deck,
   cards,
   loading,
+  error,
   onBack,
   onMasterCard,
   onAddCard,
+  onRefresh,
 }) => {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -112,6 +116,27 @@ const FlashcardViewer: React.FC<FlashcardViewerProps> = ({
     setIsFlipped(false);
   }, []);
 
+  const handleMasterCard = useCallback(
+    (cardId: string, isMastered: boolean, difficulty?: number) => {
+      if (onMasterCard) {
+        onMasterCard(cardId, isMastered, difficulty);
+      }
+    },
+    [onMasterCard]
+  );
+
+  const handleAddCard = useCallback(() => {
+    if (onAddCard) {
+      onAddCard();
+    }
+  }, [onAddCard]);
+
+  const handleRefresh = useCallback(() => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  }, [onRefresh]);
+
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (!currentCard) return;
@@ -131,8 +156,8 @@ const FlashcardViewer: React.FC<FlashcardViewerProps> = ({
           break;
         case "Enter":
           event.preventDefault();
-          if (isFlipped) {
-            onMasterCard(currentCard.id, !currentCard.is_mastered);
+          if (isFlipped && onMasterCard) {
+            handleMasterCard(currentCard.id, !currentCard.is_mastered);
           }
           break;
       }
@@ -140,13 +165,47 @@ const FlashcardViewer: React.FC<FlashcardViewerProps> = ({
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [currentCard, isFlipped, handleNextCard, handlePrevCard, onMasterCard]);
+  }, [
+    currentCard,
+    isFlipped,
+    handleNextCard,
+    handlePrevCard,
+    handleMasterCard,
+  ]);
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-96">
         <Spinner size="lg" label="Loading flashcards..." />
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="border border-danger-200">
+        <CardBody className="text-center py-16">
+          <div className="space-y-4">
+            <div className="text-danger-500">
+              <Brain size={48} className="mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-danger-600">
+              Error Loading Cards
+            </h3>
+            <p className="text-default-600">{error}</p>
+            {onRefresh && (
+              <Button
+                color="primary"
+                variant="flat"
+                onPress={handleRefresh}
+                startContent={<RefreshCw size={16} />}
+              >
+                Try Again
+              </Button>
+            )}
+          </div>
+        </CardBody>
+      </Card>
     );
   }
 
@@ -192,6 +251,17 @@ const FlashcardViewer: React.FC<FlashcardViewerProps> = ({
               {deck.mastered_count}/{deck.cards_count}
             </span>
           </div>
+
+          {onRefresh && (
+            <Button
+              variant="light"
+              size="sm"
+              onPress={handleRefresh}
+              startContent={<RefreshCw size={16} />}
+            >
+              Refresh
+            </Button>
+          )}
         </div>
       </div>
 
@@ -263,7 +333,6 @@ const FlashcardViewer: React.FC<FlashcardViewerProps> = ({
               <span className="text-sm text-default-600">
                 {currentCardIndex + 1} of {filteredCards.length}
               </span>
-              
             </div>
 
             <Button
@@ -276,12 +345,12 @@ const FlashcardViewer: React.FC<FlashcardViewerProps> = ({
             </Button>
           </div>
 
-          {isFlipped && (
+          {isFlipped && onMasterCard && (
             <div className="flex justify-center gap-4 flex-wrap">
               <Button
                 color="danger"
                 variant="flat"
-                onPress={() => onMasterCard(currentCard.id, false, 1)}
+                onPress={() => handleMasterCard(currentCard.id, false, 1)}
                 startContent={<Target size={16} />}
               >
                 Hard - Need Review
@@ -289,14 +358,14 @@ const FlashcardViewer: React.FC<FlashcardViewerProps> = ({
               <Button
                 color="warning"
                 variant="flat"
-                onPress={() => onMasterCard(currentCard.id, false, 3)}
+                onPress={() => handleMasterCard(currentCard.id, false, 3)}
                 startContent={<Brain size={16} />}
               >
                 Medium - OK
               </Button>
               <Button
                 color="success"
-                onPress={() => onMasterCard(currentCard.id, true, 5)}
+                onPress={() => handleMasterCard(currentCard.id, true, 5)}
                 startContent={<Target size={16} />}
               >
                 Easy - Mastered!
@@ -326,10 +395,10 @@ const FlashcardViewer: React.FC<FlashcardViewerProps> = ({
                   ? "Great job! Try reviewing all cards or switch to random mode."
                   : "Add your first flashcard to start studying."}
               </p>
-              {reviewMode !== "unmastered" && (
+              {reviewMode !== "unmastered" && onAddCard && (
                 <Button
                   color="primary"
-                  onPress={onAddCard}
+                  onPress={handleAddCard}
                   startContent={<Plus size={16} />}
                 >
                   Add First Card

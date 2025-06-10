@@ -1,5 +1,3 @@
-//@ts-nocheck
-
 import React, { useState } from "react";
 import {
   Modal,
@@ -19,7 +17,7 @@ import { supabase } from "@/supabaseClient";
 interface UploadForm {
   title: string;
   type: string;
-  course: string;
+  course: string; // Course remains a string
   year: string;
   pages: string;
   duration: string;
@@ -31,7 +29,7 @@ interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUploadSuccess: () => void;
-  courses: string[];
+  courses: string[]; // This prop is still defined but won't be used for the course input directly in this component
 }
 
 interface FileUploadResponse {
@@ -43,13 +41,13 @@ const UploadModal: React.FC<UploadModalProps> = ({
   isOpen,
   onClose,
   onUploadSuccess,
-  courses,
+  // courses, // No longer destructuring courses here as it's not used for a select
 }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadForm, setUploadForm] = useState<UploadForm>({
     title: "",
     type: "textbook",
-    course: "",
+    course: "", // Initial empty string for free text
     year: "",
     pages: "",
     duration: "",
@@ -91,7 +89,6 @@ const UploadModal: React.FC<UploadModalProps> = ({
     return { filePath, publicUrl };
   };
 
-  // Also update the handleUpload function's error handling:
   // Updated handleUpload function with user_id
   const handleUpload = async (): Promise<void> => {
     if (!uploadForm.title || !uploadForm.course || !uploadForm.year) {
@@ -121,7 +118,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
           const { publicUrl } = await uploadFile(uploadForm.file);
           fileUrl = publicUrl;
           fileSize = uploadForm.file.size;
-        } catch (uploadError) {
+        } catch (uploadError: any) {
           console.error("File upload failed:", uploadError);
           alert(`File upload failed: ${uploadError.message}`);
           return;
@@ -171,7 +168,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
       });
 
       onUploadSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading resource:", error);
       alert(
         `Error uploading resource: ${error.message || "Please try again."}`
@@ -224,7 +221,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
                   onSelectionChange={(keys: any) =>
                     setUploadForm({
                       ...uploadForm,
-                      type: Array.from(keys)[0],
+                      type: Array.from(keys)[0] as string,
                     })
                   }
                   isRequired
@@ -236,22 +233,19 @@ const UploadModal: React.FC<UploadModalProps> = ({
                   <SelectItem key="slides">Slides</SelectItem>
                   <SelectItem key="video">Video</SelectItem>
                 </Select>
-                <Select
+                {/* Reverted Course to an Input component */}
+                <Input
                   label="Course"
-                  placeholder="Select course"
-                  selectedKeys={uploadForm.course ? [uploadForm.course] : []}
-                  onSelectionChange={(keys: any) =>
+                  placeholder="Enter course name (e.g., 'Calculus I', 'CS101')"
+                  value={uploadForm.course}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setUploadForm({
                       ...uploadForm,
-                      course: Array.from(keys)[0],
+                      course: e.target.value,
                     })
                   }
                   isRequired
-                >
-                  {courses.map((course) => (
-                    <SelectItem key={course}>{course}</SelectItem>
-                  ))}
-                </Select>
+                />
                 <Select
                   label="Year"
                   placeholder="Select year"
@@ -259,7 +253,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
                   onSelectionChange={(keys: any) =>
                     setUploadForm({
                       ...uploadForm,
-                      year: Array.from(keys)[0],
+                      year: Array.from(keys)[0] as string,
                     })
                   }
                   isRequired

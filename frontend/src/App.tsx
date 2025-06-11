@@ -9,13 +9,12 @@ import AboutPage from "@/pages/about";
 
 // Main dashboard sections
 import MyCourses from "@/pages/dashboard/courses";
-import IndexDashboard from "@/pages/dashboard";
 import StudyPlanner from "./pages/dashboard/studyPlanner";
-import GameMode from "./pages/dashboard/gameMode";
+import GameMode from "./pages/dashboard/gameMode/gameMode";
 import CourseQuizzes from "./pages/dashboard/courses/quizzes";
 import QuizTaking from "./pages/dashboard/courses/QuizTaking";
 import StudyLibrary from "./pages/dashboard/studyLibrary";
-
+import DashboardPage from "@/pages/dashboard";
 
 function App() {
   return (
@@ -29,7 +28,7 @@ function App() {
 
       {/* Dashboard Routes with proper nesting */}
       <Route path="/dashboard">
-        <Route index element={<IndexDashboard />} />
+        <Route index element={<DashboardPage />} />
 
         {/* Courses section with nested routes */}
         <Route path="courses">
@@ -44,15 +43,7 @@ function App() {
         <Route path="library" element={<StudyLibrary />} />
         <Route path="planner" element={<StudyPlanner />} />
         <Route path="focused-mode" element={<GameMode />} />
-        {/*
-        
-        <Route path="notes" element={<NotesFeed />} />
-        <Route path="upload" element={<UploadCenter />} />
-        <Route path="focused-mode" element={<FocusedMode />} />
-        <Route path="analytics" element={<GamesAnalytics />} />
-        <Route path="profile" element={<Profile />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="help" element={<Help />} /> */}
+        <Route path="focused-mode" element={<GameMode />} />
       </Route>
     </Routes>
   );

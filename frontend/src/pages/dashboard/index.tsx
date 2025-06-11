@@ -1,280 +1,160 @@
-import DashboardLayout from "@/layouts/dashboardLayout";
-import DefaultLayout from "@/layouts/default";
-import { Button, Card, CardBody, Chip, Divider } from "@heroui/react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/supabaseClient";
-import { useEffect, useState } from "react";
-import ProfileEditorModal from "./components/ProfileModal";
+import {
+  Card,
+  CardBody,
+  Button,
+  Divider,
+  Progress,
+  Avatar,
+} from "@heroui/react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+} from "recharts";
 import { ProfileData } from "@/types";
+import DefaultLayout from "@/layouts/default";
+import DashboardLayout from "@/layouts/dashboardLayout";
 
-const IndexDashboard = () => {
-  const [profile, setProfile] = useState<ProfileData>({
-    user_id: "",
-    full_name: "",
-    email: "",
-    profile_complete: false,
+interface UserStats {
+  streak: number;
+  minutesActive: number;
+  questionsAnswered: number;
+  leaderboardPosition: number;
+  departmentRank: number;
+  points: number;
+  dataRewards: number;
+}
+
+interface LeaderboardUser {
+  id: number;
+  name: string;
+  avatar: string;
+  points: number;
+  department: string;
+}
+
+interface ActivityData {
+  day: string;
+  minutesActive: number;
+  questionsAnswered: number;
+}
+
+interface RewardsData {
+  name: string;
+  value: number;
+  color: string;
+}
+
+const DashboardPage: React.FC = () => {
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [stats, setStats] = useState<UserStats>({
+    streak: 0,
+    minutesActive: 0,
+    questionsAnswered: 0,
+    leaderboardPosition: 0,
+    departmentRank: 0,
+    points: 0,
+    dataRewards: 0,
   });
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [signOutLoading, setSignOutLoading] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
+  const [departmentLeaderboard, setDepartmentLeaderboard] = useState<
+    LeaderboardUser[]
+  >([]);
 
-  // Fetch user profile on component mount
+  // Demo data for charts
+  const activityData: ActivityData[] = [
+    { day: "Mon", minutesActive: 45, questionsAnswered: 12 },
+    { day: "Tue", minutesActive: 60, questionsAnswered: 18 },
+    { day: "Wed", minutesActive: 30, questionsAnswered: 8 },
+    { day: "Thu", minutesActive: 75, questionsAnswered: 22 },
+    { day: "Fri", minutesActive: 50, questionsAnswered: 15 },
+    { day: "Sat", minutesActive: 20, questionsAnswered: 5 },
+    { day: "Sun", minutesActive: 15, questionsAnswered: 3 },
+  ];
+
+  const rewardsData: RewardsData[] = [
+    { name: "Data", value: 65, color: "#3B82F6" },
+    { name: "Streak Bonus", value: 15, color: "#10B981" },
+    { name: "Leaderboard", value: 10, color: "#F59E0B" },
+    { name: "Referrals", value: 10, color: "#EC4899" },
+  ];
+
   useEffect(() => {
-    fetchProfile();
+    fetchProfileAndStats();
   }, []);
 
-  const fetchProfile = async () => {
+  const fetchProfileAndStats = async (): Promise<void> => {
     try {
       setLoading(true);
-      // Get current user session from Supabase auth
       const { data: session, error: sessionError } =
         await supabase.auth.getSession();
-
       if (sessionError) throw sessionError;
-
       if (!session.session) {
-        // Redirect to login if no session
         window.location.href = "/auth/login";
         return;
       }
 
-      const { data: userData, error: userError } =
-        await supabase.auth.getUser();
-
-      if (userError) throw userError;
-      if (!userData.user) {
-        window.location.href = "/auth/login";
-        return;
-      }
-
-      // Try to fetch existing profile
-      const { data, error } = await supabase
+      // Fetch profile
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", userData.user.id)
+        .eq("user_id", session.session.user.id)
         .single();
 
-      // Special handling for "no rows returned" error
-      if (error) {
-        if (error.code === "PGRST116") {
-          // No profile exists, create a new one
-          const newProfileData = {
-            user_id: userData.user.id,
-            full_name: userData.user.user_metadata?.full_name || "",
-            email: userData.user.email,
-            profile_complete: false,
-          };
+      if (profileError) throw profileError;
+      setProfile(profileData as ProfileData);
 
-          // Insert new profile
-          const { error: insertError } = await supabase
-            .from("profiles")
-            .insert(newProfileData);
+      // Demo user stats
+      const userStats: UserStats = {
+        streak: 7,
+        minutesActive: 245,
+        questionsAnswered: 132,
+        leaderboardPosition: 42,
+        departmentRank: 3,
+        points: 1250,
+        dataRewards: 5.5,
+      };
+      setStats(userStats);
 
-          if (insertError) throw insertError;
+      // Demo leaderboard data
+      const mockLeaderboard: LeaderboardUser[] = Array.from(
+        { length: 10 },
+        (_, i) => ({
+          id: i + 1,
+          name: `User ${i + 1}`,
+          avatar: `https://i.pravatar.cc/150?img=${i + 1}`,
+          points: 2000 - i * 100,
+          department:
+            i % 2 === 0
+              ? profileData?.department || "Computer Science"
+              : "Mathematics",
+        })
+      );
+      setLeaderboard(mockLeaderboard);
 
-          // Fetch the newly created profile
-          const { data: newProfile, error: fetchError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("user_id", userData.user.id)
-            .single();
-
-          if (fetchError) throw fetchError;
-          setProfile(newProfile as ProfileData);
-        } else {
-          // Handle other errors
-          throw error;
-        }
-      } else {
-        // Profile exists, set it in state
-        setProfile(data as ProfileData);
+      // Filter for department leaderboard
+      if (profileData?.department) {
+        const deptLeaderboard = mockLeaderboard
+          .filter((user) => user.department === profileData.department)
+          .slice(0, 5);
+        setDepartmentLeaderboard(deptLeaderboard);
       }
-    } catch (error: any) {
-      console.error("Error fetching profile:", error);
-      // Handle authentication errors
-      if (error?.message?.includes("auth") || error.message?.includes("JWT")) {
-        window.location.href = "/auth/login?error=session_expired";
-      }
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleUpdateProfile = async (updates: Partial<ProfileData>) => {
-    try {
-      setIsSaving(true);
-      const { data: session } = await supabase.auth.getSession();
-
-      if (!session.session?.user?.id) {
-        throw new Error("Authentication required");
-      }
-
-      // Create the updated profile data
-      const updatedProfileData = {
-        ...updates,
-        updated_at: new Date().toISOString(),
-        profile_complete: checkProfileComplete({ ...profile, ...updates }),
-      };
-
-      // First check if the profile exists
-      const { data: existingProfile, error: checkError } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .eq("user_id", session.session.user.id)
-        .single();
-
-      if (checkError) {
-        // If error is "no rows returned", we need to create the profile
-        if (checkError.code === "PGRST116") {
-          // Create a new profile with the user's data and updates
-          const newProfileData = {
-            user_id: session.session.user.id,
-            full_name: profile.full_name || "",
-            email: profile.email || session.session.user.email,
-            ...updatedProfileData,
-          };
-
-          // Insert new profile
-          const { error: insertError } = await supabase
-            .from("profiles")
-            .insert(newProfileData);
-
-          if (insertError) throw insertError;
-        } else {
-          throw checkError;
-        }
-      } else {
-        // Profile exists, update it
-        const { error: updateError } = await supabase
-          .from("profiles")
-          .update(updatedProfileData)
-          .eq("user_id", session.session.user.id);
-
-        if (updateError) throw updateError;
-      }
-
-      // Fetch the updated/created profile
-      const { data: updatedProfile, error: fetchError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", session.session.user.id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Update local state with the new profile data
-      setProfile(updatedProfile as ProfileData);
-      setIsEditModalOpen(false);
-
-      // You could add a success notification here
-      // showNotification({ type: "success", message: "Profile updated successfully" });
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      // showNotification({ type: "error", message: "Failed to update profile" });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleAvatarUpload = async (file: File) => {
-    try {
-      setUploading(true);
-
-      const { data: session } = await supabase.auth.getSession();
-
-      if (!session.session?.user?.id) {
-        throw new Error("Authentication required");
-      }
-
-      // Check file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error("File size exceeds 5MB limit");
-      }
-
-      // Check file type
-      const validTypes = ["image/jpeg", "image/png", "image/jpg", "image/gif"];
-      if (!validTypes.includes(file.type)) {
-        throw new Error("Invalid file type. Please use JPG, PNG or GIF");
-      }
-
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${session.session.user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      // Delete old avatar if exists
-      if (profile.avatar_url) {
-        const oldPath = profile.avatar_url.split("/").pop();
-        if (oldPath) {
-          await supabase.storage.from("avatars").remove([oldPath]);
-        }
-      }
-
-      // Upload file to storage
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("avatars").getPublicUrl(filePath);
-
-      // Update profile with new avatar URL
-      await handleUpdateProfile({ avatar_url: publicUrl });
-    } catch (error: any) {
-      console.error("Error uploading avatar:", error);
-      // Show error notification
-      // showNotification({ type: "error", message: error.message || "Failed to upload photo" });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const checkProfileComplete = (profile: ProfileData) => {
-    const requiredFields: (keyof ProfileData)[] = [
-      "full_name",
-      "email",
-      "date_of_birth",
-      "gender",
-      "school_name",
-      "department",
-      "level",
-      "state_of_origin",
-      "matric_number",
-    ];
-
-    return requiredFields.every((field) => Boolean(profile[field]));
-  };
-
-  // Fields that need updating
-  const missingFields = [
-    ...(!profile.date_of_birth ? ["Date of Birth"] : []),
-    ...(!profile.gender ? ["Gender"] : []),
-    ...(!profile.school_name ? ["School Name"] : []),
-    ...(!profile.department ? ["Department"] : []),
-    ...(!profile.level ? ["Level"] : []),
-    ...(!profile.state_of_origin ? ["State of Origin"] : []),
-    ...(!profile.matric_number ? ["Matriculation Number"] : []),
-  ];
-
-  const handleSignOut = async () => {
-    try {
-      setSignOutLoading(true);
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      window.location.href = "/auth/login";
-    } catch (error) {
-      console.error("Error signing out:", error);
-    } finally {
-      setSignOutLoading(false);
-    }
-  };
-
-  const openEditModal = () => {
-    setIsEditModalOpen(true);
   };
 
   if (loading) {
@@ -282,7 +162,7 @@ const IndexDashboard = () => {
       <DefaultLayout>
         <DashboardLayout>
           <div className="flex justify-center items-center h-64">
-            <p>Loading profile...</p>
+            <p>Loading dashboard...</p>
           </div>
         </DashboardLayout>
       </DefaultLayout>
@@ -293,191 +173,311 @@ const IndexDashboard = () => {
     <DefaultLayout>
       <DashboardLayout>
         <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Stats Cards */}
+            <Card className="border border-blue-200 bg-blue-50">
+              <CardBody className="p-4">
+                <h3 className="text-sm font-medium text-blue-800">
+                  Current Streak
+                </h3>
+                <p className="text-2xl font-bold">{stats.streak} days</p>
+                <Progress
+                  value={(stats.streak / 30) * 100}
+                  className="mt-2"
+                  color="primary"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {30 - stats.streak} days to next reward
+                </p>
+              </CardBody>
+            </Card>
 
-          {!profile.profile_complete && (
-            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
-              <CardBody className="p-6">
-                <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                  <div>
-                    <h2 className="text-xl font-bold text-blue-800 mb-2">
-                      Complete Your Profile
-                    </h2>
-                    <p className="text-gray-700 mb-4">
-                      Please update the following information to get full access
-                      to all features:
-                    </p>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {missingFields.map((field) => (
-                        <Chip key={field} color="warning" variant="flat">
-                          {field}
-                        </Chip>
-                      ))}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      Profile completion:{" "}
-                      {Math.round(((9 - missingFields.length) / 9) * 100)}%
-                    </div>
+            <Card className="border border-green-200 bg-green-50">
+              <CardBody className="p-4">
+                <h3 className="text-sm font-medium text-green-800">
+                  Minutes Active
+                </h3>
+                <p className="text-2xl font-bold">{stats.minutesActive} mins</p>
+                <div className="h-2 w-full bg-gray-200 rounded-full mt-2">
+                  <div
+                    className="h-full bg-green-500 rounded-full"
+                    style={{
+                      width: `${Math.min(100, stats.minutesActive / 5)}%`,
+                    }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {Math.floor(stats.minutesActive / 60)} hours this week
+                </p>
+              </CardBody>
+            </Card>
+
+            <Card className="border border-purple-200 bg-purple-50">
+              <CardBody className="p-4">
+                <h3 className="text-sm font-medium text-purple-800">
+                  Questions Answered
+                </h3>
+                <p className="text-2xl font-bold">{stats.questionsAnswered}</p>
+                <div className="h-2 w-full bg-gray-200 rounded-full mt-2">
+                  <div
+                    className="h-full bg-purple-500 rounded-full"
+                    style={{
+                      width: `${Math.min(100, stats.questionsAnswered / 2)}%`,
+                    }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {Math.floor(stats.questionsAnswered / 20)} data rewards earned
+                </p>
+              </CardBody>
+            </Card>
+
+            <Card className="border border-yellow-200 bg-yellow-50">
+              <CardBody className="p-4">
+                <h3 className="text-sm font-medium text-yellow-800">
+                  Leaderboard Position
+                </h3>
+                <p className="text-2xl font-bold">
+                  #{stats.leaderboardPosition}
+                </p>
+                <div className="h-2 w-full bg-gray-200 rounded-full mt-2">
+                  <div
+                    className="h-full bg-yellow-500 rounded-full"
+                    style={{
+                      width: `${Math.min(100, 100 - stats.leaderboardPosition)}%`,
+                    }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  #{stats.departmentRank} in {profile?.department}
+                </p>
+              </CardBody>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Activity Chart */}
+            <Card className="lg:col-span-2">
+              <CardBody>
+                <h3 className="font-semibold text-lg mb-4">Weekly Activity</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={activityData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="day" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar
+                        dataKey="minutesActive"
+                        name="Minutes Active"
+                        fill="#3B82F6"
+                        fillOpacity={0.7}
+                      />
+                      <Bar
+                        dataKey="questionsAnswered"
+                        name="Questions Answered"
+                        fill="#8B5CF6"
+                        fillOpacity={0.7}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardBody>
+            </Card>
+
+            {/* Rewards Summary */}
+            <Card>
+              <CardBody>
+                <h3 className="font-semibold text-lg mb-4">Rewards Summary</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={rewardsData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        label={({ name, percent }) =>
+                          `${name} ${(percent * 100).toFixed(0)}%`
+                        }
+                      >
+                        {rewardsData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <Divider className="my-4" />
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Total Points:</span>
+                    <span className="font-medium">{stats.points}</span>
                   </div>
-                  <Button
-                    color="primary"
-                    onClick={openEditModal}
-                    className="shrink-0"
-                  >
-                    Complete Profile
+                  <div className="flex justify-between">
+                    <span className="text-sm">Data Rewards:</span>
+                    <span className="font-medium">{stats.dataRewards} GB</span>
+                  </div>
+                  <Button color="primary" size="sm" className="w-full mt-4">
+                    Claim Rewards
                   </Button>
                 </div>
               </CardBody>
             </Card>
-          )}
+          </div>
 
-          <Card className="border border-gray-200">
-            <CardBody className="p-6">
-              <div
-                className="flex flex-col md:flex-row gap-6"
-                id="profile-details"
-              >
-                {/* Profile Picture Section */}
-                <div className="flex flex-col items-center space-y-4">
-                  {profile.avatar_url ? (
-                    <img
-                      src={profile.avatar_url}
-                      alt="Profile"
-                      className="w-32 h-32 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                      <svg
-                        className="w-full h-full text-gray-400"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112 15c3.183 0 6.235 1.264 8.485 3.515A9.975 9.975 0 0024 20.993zM12 12a6 6 0 100-12 6 6 0 000 12z" />
-                      </svg>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Global Leaderboard */}
+            <Card>
+              <CardBody>
+                <h3 className="font-semibold text-lg mb-4">
+                  Global Leaderboard
+                </h3>
+                <div className="space-y-4">
+                  {leaderboard.map((user, index) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span className="font-medium text-gray-500 w-6 text-right">
+                          {index + 1}
+                        </span>
+                        <Avatar src={user.avatar} size="sm" />
+                        <div>
+                          <p className="font-medium">{user.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {user.department}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="font-bold">{user.points} pts</span>
                     </div>
-                  )}
-                  <input
-                    type="file"
-                    id="avatar-upload"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        handleAvatarUpload(e.target.files[0]);
-                      }
-                    }}
-                  />
-                  <Button
-                    variant="bordered"
-                    size="sm"
-                    onClick={() =>
-                      document.getElementById("avatar-upload")?.click()
-                    }
-                    isLoading={uploading}
-                    isDisabled={uploading}
-                  >
-                    {uploading ? "Uploading..." : "Change Photo"}
+                  ))}
+                </div>
+                <Divider className="my-4" />
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">
+                    Your position: #{stats.leaderboardPosition}
+                  </span>
+                  <Button variant="flat" size="sm">
+                    View All
                   </Button>
                 </div>
+              </CardBody>
+            </Card>
 
-                {/* Profile Details Section */}
-                <div className="flex-1 space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h2 className="text-2xl font-bold">
-                        {profile.full_name || "Not provided"}
-                      </h2>
-                      <p className="text-gray-500">
-                        {profile.email || "Not provided"}
-                      </p>
-                    </div>
-                    <Button
-                      variant="flat"
-                      color="primary"
-                      onClick={openEditModal}
+            {/* Department Leaderboard */}
+            <Card>
+              <CardBody>
+                <h3 className="font-semibold text-lg mb-4">
+                  {profile?.department || "Your Department"} Leaderboard
+                </h3>
+                <div className="space-y-4">
+                  {departmentLeaderboard.map((user, index) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between"
                     >
-                      Edit Profile
-                    </Button>
-                  </div>
+                      <div className="flex items-center space-x-3">
+                        <span className="font-medium text-gray-500 w-6 text-right">
+                          {index + 1}
+                        </span>
+                        <Avatar src={user.avatar} size="sm" />
+                        <div>
+                          <p className="font-medium">{user.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {user.department}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="font-bold">{user.points} pts</span>
+                    </div>
+                  ))}
+                  {stats.departmentRank > 5 && (
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                      <div className="flex items-center space-x-3">
+                        <span className="font-medium text-gray-500 w-6 text-right">
+                          {stats.departmentRank}
+                        </span>
+                        <Avatar
+                          src={
+                            profile?.avatar_url ||
+                            `https://i.pravatar.cc/150?img=30`
+                          }
+                          size="sm"
+                        />
+                        <div>
+                          <p className="font-medium">You</p>
+                          <p className="text-xs text-gray-500">
+                            {profile?.department}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="font-bold">{stats.points} pts</span>
+                    </div>
+                  )}
+                </div>
+                <Divider className="my-4" />
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">
+                    Your position: #{stats.departmentRank}
+                  </span>
+                  <Button variant="flat" size="sm">
+                    View All
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
+          </div>
 
-                  <Divider />
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-sm text-gray-500">
-                        Date of Birth
+          {/* Study Progress Section */}
+          <Card>
+            <CardBody>
+              <h3 className="font-semibold text-lg mb-4">Study Progress</h3>
+              <div className="space-y-6">
+                {profile?.department && (
+                  <div>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium">
+                        {profile.department} Core
                       </span>
-                      <p className="font-medium">
-                        {profile.date_of_birth || "Not provided"}
-                      </p>
+                      <span className="text-sm text-gray-500">65%</span>
                     </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Gender</span>
-                      <p className="font-medium">
-                        {profile.gender || "Not provided"}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">School</span>
-                      <p className="font-medium">
-                        {profile.school_name || "Not provided"}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Department</span>
-                      <p className="font-medium">
-                        {profile.department || "Not provided"}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Level</span>
-                      <p className="font-medium">
-                        {profile.level || "Not provided"}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">
-                        State of Origin
-                      </span>
-                      <p className="font-medium">
-                        {profile.state_of_origin || "Not provided"}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">
-                        Matric Number
-                      </span>
-                      <p className="font-medium">
-                        {profile.matric_number || "Not provided"}
-                      </p>
-                    </div>
+                    <Progress value={65} color="primary" />
                   </div>
+                )}
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">General Studies</span>
+                    <span className="text-sm text-gray-500">42%</span>
+                  </div>
+                  <Progress value={42} color="secondary" />
+                </div>
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">
+                      TII Labeling Tasks
+                    </span>
+                    <span className="text-sm text-gray-500">88%</span>
+                  </div>
+                  <Progress value={88} color="success" />
                 </div>
               </div>
+              <Divider className="my-4" />
+              <Button color="primary" className="w-full">
+                Continue Studying
+              </Button>
             </CardBody>
           </Card>
-
-          {profile.profile_complete && (
-            <div className="mt-6">
-              {/* Your actual dashboard content would go here */}
-              <p>
-                Your profile is complete! You can now access all dashboard
-                features.
-              </p>
-            </div>
-          )}
         </div>
-
-        {/* Profile Editor Modal */}
-        <ProfileEditorModal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          profile={profile}
-          onSave={handleUpdateProfile}
-          isSaving={isSaving}
-        />
       </DashboardLayout>
     </DefaultLayout>
   );
 };
 
-export default IndexDashboard;
+export default DashboardPage;

@@ -111,6 +111,45 @@ export interface Flashcard {
   created_at: string;
 }
 
+
+export interface Choice {
+  key: string;
+  value: string;
+}
+
+export interface Task {
+  id: string;
+  track_id: string;
+  category: string;
+  complexity: number;
+  task: {
+    text: string;
+    choices: Choice[];
+  };
+  content: {
+    image: {
+      url: string;
+      filename: string;
+    };
+  };
+  explanation?: string;
+}
+
+export interface SessionStats {
+  tasksCompleted: number;
+  sessionScore: number;
+  startTime: Date;
+  dataRewards: number;
+}
+
+export interface SubmissionResult {
+  success: boolean;
+  confidence?: number;
+  correct_answer?: string;
+  explanation?: string;
+  [key: string]: any;
+}
+
 // Define the StudySession interface - date is a Date object for client-side use
 export interface StudySession {
   id: string;

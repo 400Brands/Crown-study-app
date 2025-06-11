@@ -4,7 +4,6 @@ import { Choice, SessionStats, SubmissionResult, Task } from "@/types";
 import { supabase } from "@/supabaseClient";
 
 const API_BASE_URL: string = "https://crowdlabel.tii.ae/api/2025.2";
-const API_KEY: string = "jAG4usG-LvMn2JyBSgWCIN9YIKbKAEMJ";
 
 const GameMode = () => {
   // Game state

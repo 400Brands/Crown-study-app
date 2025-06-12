@@ -63,7 +63,7 @@ export interface Course {
   thumbnail: string;
 }
 
-export type StudyMaterialType = 'quiz' | 'flashcard' | 'pastQuestion';
+export type StudyMaterialType = "quiz" | "flashcard" | "pastQuestion";
 
 export interface StudyMaterial {
   id: number;
@@ -110,7 +110,6 @@ export interface Flashcard {
   last_reviewed: string;
   created_at: string;
 }
-
 
 export interface Choice {
   key: string;
@@ -200,4 +199,92 @@ export interface StudyMaterialSectionProps {
   showLastReviewed?: boolean;
   showYear?: boolean;
   showDownloads?: boolean;
+}
+
+// Extend your existing types with these additions
+export interface UserStats {
+  streak: number;
+  max_streak: number;
+  total_score: number;
+  total_answers: number;
+  correct_answers: number;
+  data_rewards: number;
+  leaderboard_position?: number;
+  department_rank?: number;
+}
+
+export interface LeaderboardEntry {
+  user_id: string;
+  name: string;
+  avatar_url: string | null;
+  department: string;
+  total_score: number;
+  rank: number;
+}
+
+export interface ActivityData {
+  day: string;
+  minutes_active: number;
+  questions_answered: number;
+}
+
+export interface RewardsData {
+  name: string;
+  value: number;
+  color: string;
+}
+
+export interface DashboardData {
+  profile: ProfileData | null;
+  stats: UserStats;
+  leaderboard: LeaderboardEntry[];
+  departmentLeaderboard: LeaderboardEntry[];
+  activityData: ActivityData[];
+}
+
+//new
+
+// types/dashboard.ts
+export interface UserStats2 {
+  streak: number;
+  minutesActive: number;
+  questionsAnswered: number;
+  leaderboardPosition: number;
+  departmentRank: number;
+  points: number;
+  dataRewards: number;
+  accuracy: number;
+}
+
+export interface LeaderboardUser {
+  id: string;
+  name: string;
+  avatar: string;
+  points: number;
+  department: string;
+}
+
+export interface ActivityData {
+  day: string;
+  minutesActive: number;
+  questionsAnswered: number;
+}
+
+export interface StudyProgress {
+  name: string;
+  progress: number;
+}
+
+export interface RewardsData {
+  name: string;
+  value: number;
+  color: string;
+}
+
+export interface LoadingStates {
+  profile: boolean;
+  stats: boolean;
+  activity: boolean;
+  leaderboards: boolean;
+  progress: boolean;
 }

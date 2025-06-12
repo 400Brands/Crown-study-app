@@ -2,8 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import GameInterface from "./gameInterface";
 import { Choice, SessionStats, SubmissionResult, Task } from "@/types";
 import { supabase } from "@/supabaseClient";
+import DefaultLayout from "@/layouts/default";
+import DashboardLayout from "@/layouts/dashboardLayout";
 
 const API_BASE_URL: string = "https://crowdlabel.tii.ae/api/2025.2";
+const API_KEY = "jAG4usG-LvMn2JyBSgWCIN9YIKbKAEMJ";
 
 const GameMode = () => {
   // Game state
@@ -20,7 +23,7 @@ const GameMode = () => {
   const [correctAnswers, setCorrectAnswers] = useState<number>(0);
   const [selectedChoice, setSelectedChoice] = useState<Choice | null>(null);
   const [showResult, setShowResult] = useState<boolean>(false);
-  const [isCorrect, setIsCorrect] = useState<boolean | "" | undefined>(false);
+  const [isCorrect, setIsCorrect] = useState<boolean | "" | undefined>();
   const [sessionStats, setSessionStats] = useState<SessionStats>({
     tasksCompleted: 0,
     sessionScore: 0,
@@ -31,35 +34,110 @@ const GameMode = () => {
   // Supabase state
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-  // Initialize user session
+  // Initialize user session and load existing stats
   useEffect(() => {
     const initializeSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUserId(session.user.id);
+      try {
+        const {
+          data: { session },
+          error: authError,
+        } = await supabase.auth.getSession();
+
+        if (authError) {
+          console.error("Error getting session:", authError);
+          setIsInitialized(true);
+          return;
+        }
+
+        if (session?.user) {
+          setUserId(session.user.id);
+          await loadUserStats(session.user.id);
+        }
+      } catch (error) {
+        console.error("Initialization error:", error);
+      } finally {
+        setIsInitialized(true);
       }
     };
+
     initializeSession();
   }, []);
+
+  // Load user stats from Supabase
+  const loadUserStats = async (userId: string) => {
+    try {
+      // Get user's overall stats
+      const { data: userStats, error: userError } = await supabase
+        .from("user_stats")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
+
+      if (userError && userError.code !== "PGRST116") {
+        console.error("Error loading user stats:", userError);
+        return;
+      }
+
+      // Get user's recent session data
+      const { data: recentSession, error: sessionError } = await supabase
+        .from("game_sessions")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (sessionError && sessionError.code !== "PGRST116") {
+        console.error("Error loading recent session:", sessionError);
+      }
+
+      // Set stats from backend or defaults
+      if (userStats) {
+        setScore(userStats.total_score || 0);
+        setMaxStreak(userStats.max_streak || 0);
+        setTotalAnswered(userStats.total_answers || 0);
+        setCorrectAnswers(userStats.correct_answers || 0);
+        setAccuracy(
+          userStats.total_answers > 0
+            ? Math.round(
+                (userStats.correct_answers / userStats.total_answers) * 100
+              )
+            : 0
+        );
+      }
+
+      // Set current streak from active session
+      if (recentSession) {
+        setStreak(recentSession.current_streak || 0);
+        setSessionId(recentSession.id);
+        setSessionStats({
+          tasksCompleted: recentSession.tasks_completed || 0,
+          sessionScore: recentSession.score + userStats.total_score,
+          startTime: new Date(recentSession.created_at),
+          dataRewards: recentSession.data_rewards || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading user stats:", error);
+    }
+  };
 
   const getHeaders = useCallback(
     () => ({
       "x-api-key": API_KEY,
       "Content-Type": "application/json",
     }),
-    []
+    [API_KEY]
   );
 
-  // Calculate accuracy whenever answers change
+  // Calculate accuracy
   useEffect(() => {
-    if (totalAnswered > 0) {
-      setAccuracy(Math.round((correctAnswers / totalAnswered) * 100));
-    } else {
-      setAccuracy(0);
-    }
+    setAccuracy(
+      totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0
+    );
   }, [correctAnswers, totalAnswered]);
 
   // Fetch a new task from the API
@@ -68,6 +146,7 @@ const GameMode = () => {
     setError(null);
     setSelectedChoice(null);
     setShowResult(false);
+    setIsCorrect(false);
 
     try {
       const response = await fetch(
@@ -80,31 +159,22 @@ const GameMode = () => {
 
       if (!response.ok) {
         throw new Error(
-          `API Error: ${response.status} - ${response.statusText}`
+          `API Error: ${response.status} - ${await response.text()}`
         );
       }
 
       const data = await response.json();
-      let taskToSet: Task | null = null;
+      const taskToSet = Array.isArray(data) ? data[0] : data;
 
-      if (Array.isArray(data) && data.length > 0) {
-        taskToSet = data[0];
-      } else if (data && typeof data === "object") {
-        taskToSet = data;
-      } else {
-        throw new Error("No tasks available");
+      if (!taskToSet?.id) {
+        throw new Error("Invalid task data received");
       }
 
-      if (taskToSet) {
-        setCurrentTask(taskToSet);
-      } else {
-        throw new Error("Failed to parse task data from API response.");
-      }
+      setCurrentTask(taskToSet);
     } catch (err) {
       console.error("Error fetching task:", err);
-      setError(
-        err instanceof Error ? err.message : "An unknown error occurred"
-      );
+      setError(err instanceof Error ? err.message : "Failed to fetch task");
+      setTimeout(() => fetchTask(), 2000); // Retry after 2 seconds
     } finally {
       setIsLoading(false);
     }
@@ -117,47 +187,32 @@ const GameMode = () => {
       solutionKey: string,
       trackingId: string
     ): Promise<SubmissionResult | null> => {
-      const possibleBodyFormats = [
+      const requestBodies = [
         { solution: solutionKey, tracking_id: trackingId },
         { solution: solutionKey, trackingId: trackingId },
         { solution: solutionKey, track_id: trackingId },
         { solution: solutionKey, id: trackingId },
-        { solution: solutionKey, tracking: { id: trackingId } },
       ];
 
-      for (let i = 0; i < possibleBodyFormats.length; i++) {
-        const requestBody = possibleBodyFormats[i];
-
+      for (const body of requestBodies) {
         try {
           const response = await fetch(
             `${API_BASE_URL}/tasks/${taskId}/submit`,
             {
               method: "POST",
               headers: getHeaders(),
-              body: JSON.stringify(requestBody),
+              body: JSON.stringify(body),
             }
           );
 
           if (response.ok) {
-            const data = await response.json();
-            return data as SubmissionResult;
-          } else {
-            const errorText = await response.text();
-            if (i < possibleBodyFormats.length - 1) continue;
-            throw new Error(
-              `All submission attempts failed. Last error: ${response.status} - ${response.statusText} - ${errorText}`
-            );
+            return await response.json();
           }
         } catch (err) {
-          if (i < possibleBodyFormats.length - 1) continue;
-          setError(
-            err instanceof Error
-              ? err.message
-              : "All submission attempts failed with unknown errors."
-          );
-          return null;
+          console.error("Submission attempt failed:", err);
         }
       }
+
       return null;
     },
     [API_BASE_URL, getHeaders]
@@ -165,22 +220,24 @@ const GameMode = () => {
 
   // Start game with Supabase session
   const startGame = async () => {
-    if (!userId) return;
+    if (!userId) {
+      setError("User not authenticated");
+      return;
+    }
 
     try {
-      const { data, error } = await supabase.rpc("start_game_session", {
-        p_user_id: userId,
-      });
+      const { data: sessionId, error } = await supabase.rpc(
+        "start_game_session",
+        {
+          p_user_id: userId,
+        }
+      );
 
       if (error) throw error;
 
-      setSessionId(data);
+      setSessionId(sessionId);
       setIsPlaying(true);
       setTimeLeft(30);
-      setScore(0);
-      setStreak(0);
-      setTotalAnswered(0);
-      setCorrectAnswers(0);
       setSessionStats({
         tasksCompleted: 0,
         sessionScore: 0,
@@ -188,127 +245,117 @@ const GameMode = () => {
         dataRewards: 0,
       });
 
-      fetchTask();
+      await fetchTask();
     } catch (error) {
       console.error("Error starting game session:", error);
+      setError("Failed to start game session");
     }
   };
 
-  // Handle user selection with Supabase integration
+  // Handle user selection
   const handleChoiceSelect = async (choice: Choice) => {
-    if (!currentTask || showResult || !sessionId || !userId) return;
+    if (!currentTask || showResult || !sessionId || !userId || isLoading)
+      return;
 
     const responseStartTime = Date.now();
     setSelectedChoice(choice);
+    setIsLoading(true);
 
-    const result = await submitAnswer(
-      currentTask.id,
-      choice.key,
-      currentTask.track_id
-    );
+    try {
+      const result = await submitAnswer(
+        currentTask.id,
+        choice.key,
+        currentTask.track_id
+      );
 
-    const responseTime = Date.now() - responseStartTime;
-
-    if (result) {
-      const CONFIDENCE_THRESHOLD = 0.5;
+      const responseTime = Date.now() - responseStartTime;
       const correct =
-        !result.error &&
-        result.confidence !== undefined &&
-        result.confidence >= CONFIDENCE_THRESHOLD;
+        result?.confidence !== undefined && result.confidence >= 0.5;
 
+      // Update local state
       setIsCorrect(correct);
       setShowResult(true);
       setTotalAnswered((prev) => prev + 1);
 
-      let newStreak = streak;
-      let pointsEarned = 0;
+      let newStreak = correct ? streak + 1 : 0;
+      const pointsEarned = correct ? 10 * newStreak : 0;
 
       if (correct) {
-        console.log(
-          `✅ Correct answer! Streak increased to ${streak + 1}.`,
-          `Score increased by ${10 * (streak + 1)}`
-        );
         setCorrectAnswers((prev) => prev + 1);
-        newStreak = streak + 1;
-        pointsEarned = 10 * newStreak;
-        setStreak(newStreak);
-        setMaxStreak((prev) => Math.max(prev, newStreak));
         setScore((prev) => prev + pointsEarned);
-      } else {
-        console.log("❌ Incorrect answer. Streak reset.");
-        newStreak = 0;
-        setStreak(0);
+        setMaxStreak((prev) => Math.max(prev, newStreak));
       }
+      setStreak(newStreak);
+
+      // Update session stats
+      const newSessionStats = {
+        tasksCompleted: sessionStats.tasksCompleted + 1,
+        sessionScore: sessionStats.sessionScore + pointsEarned,
+        startTime: sessionStats.startTime,
+        dataRewards: sessionStats.dataRewards + (correct ? 0.1 : 0),
+      };
+      setSessionStats(newSessionStats);
 
       // Save to Supabase
-      try {
-        await supabase.rpc("record_task_submission", {
-          p_user_id: userId,
-          p_session_id: sessionId,
-          p_task_id: currentTask.id,
-          p_tracking_id: currentTask.track_id,
-          p_choice_key: choice.key,
-          p_choice_value: choice.value,
-          p_is_correct: correct,
-          p_confidence: result.confidence || 0,
-          p_response_time: responseTime,
-          p_points_earned: pointsEarned,
-          p_streak: newStreak,
-          p_api_response: result,
-        });
-
-        // Update session stats
-        const newSessionStats = {
-          tasksCompleted: sessionStats.tasksCompleted + 1,
-          sessionScore: sessionStats.sessionScore + pointsEarned,
-          startTime: sessionStats.startTime,
-          dataRewards: sessionStats.dataRewards + (correct ? 0.1 : 0),
-        };
-
-        setSessionStats(newSessionStats);
-
-        await supabase.rpc("update_game_session", {
-          p_session_id: sessionId,
-          p_score: newSessionStats.sessionScore,
-          p_streak: newStreak,
-          p_tasks_completed: newSessionStats.tasksCompleted,
-          p_correct_answers: correctAnswers + (correct ? 1 : 0),
-          p_total_answers: totalAnswered + 1,
-          p_data_rewards: newSessionStats.dataRewards,
-        });
-      } catch (error) {
-        console.error("Error saving to Supabase:", error);
+      if (result) {
+        await Promise.all([
+          supabase.rpc("record_task_submission", {
+            p_user_id: userId,
+            p_session_id: sessionId,
+            p_task_id: currentTask.id,
+            p_tracking_id: currentTask.track_id,
+            p_choice_key: choice.key,
+            p_choice_value: choice.value,
+            p_is_correct: correct,
+            p_confidence: result.confidence || 0,
+            p_response_time: responseTime,
+            p_points_earned: pointsEarned,
+            p_streak: newStreak,
+            p_api_response: result,
+          }),
+          supabase.rpc("update_game_session", {
+            p_session_id: sessionId,
+            p_score: newSessionStats.sessionScore,
+            p_streak: newStreak,
+            p_tasks_completed: newSessionStats.tasksCompleted,
+            p_correct_answers: correctAnswers + (correct ? 1 : 0),
+            p_total_answers: totalAnswered + 1,
+            p_data_rewards: newSessionStats.dataRewards,
+          }),
+          supabase.rpc("update_user_stats", {
+            p_user_id: userId,
+            p_points_earned: pointsEarned,
+            p_is_correct: correct,
+            p_new_streak: newStreak,
+          }),
+        ]);
       }
-    } else {
-      console.error("Submission failed or returned null");
-      setIsCorrect(false);
-      setShowResult(true);
-      setTotalAnswered((prev) => prev + 1);
-      setStreak(0);
+    } catch (error) {
+      console.error("Error handling choice:", error);
+      setError("Failed to process answer");
+    } finally {
+      setIsLoading(false);
+      setTimeout(fetchTask, 2000);
     }
-
-    setTimeout(() => {
-      fetchTask();
-    }, 2000);
   };
 
   // End game and finalize session
   const endGame = async () => {
     if (sessionId) {
       try {
-        await supabase
-          .from("game_sessions")
-          .update({
-            is_active: false,
-            end_time: new Date().toISOString(),
-            total_time_seconds: Math.floor(
-              (Date.now() - sessionStats.startTime.getTime()) / 1000
-            ),
-          })
-          .eq("id", sessionId);
-
-        // Refresh leaderboards
-        await supabase.rpc("refresh_leaderboards");
+        await Promise.all([
+          supabase
+            .from("game_sessions")
+            .update({
+              is_active: false,
+              end_time: new Date().toISOString(),
+              total_time_seconds: Math.floor(
+                (Date.now() - sessionStats.startTime.getTime()) / 1000
+              ),
+            })
+            .eq("id", sessionId),
+          supabase.rpc("refresh_leaderboards"),
+        ]);
       } catch (error) {
         console.error("Error ending game session:", error);
       }
@@ -317,6 +364,21 @@ const GameMode = () => {
     setIsPlaying(false);
     setSessionId(null);
   };
+
+  if (!isInitialized) {
+    return (
+      <DefaultLayout>
+        <DashboardLayout>
+          <div className="flex justify-center items-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading dashboard...</p>
+            </div>
+          </div>
+        </DashboardLayout>
+      </DefaultLayout>
+    );
+  }
 
   return (
     <GameInterface

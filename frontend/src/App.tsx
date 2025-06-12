@@ -14,7 +14,7 @@ import GameMode from "./pages/dashboard/gameMode/gameMode";
 import CourseQuizzes from "./pages/dashboard/courses/quizzes";
 import QuizTaking from "./pages/dashboard/courses/QuizTaking";
 import StudyLibrary from "./pages/dashboard/studyLibrary";
-import DashboardPage from "@/pages/dashboard";
+import DashboardPage from "@/pages/dashboard/home";
 
 function App() {
   return (

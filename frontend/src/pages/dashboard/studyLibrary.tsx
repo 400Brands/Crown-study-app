@@ -159,7 +159,7 @@ const StudyLibraryT = () => {
   return (
     <DefaultLayout>
       <DashboardLayout>
-        <div className="space-y-6">
+        <div className="space-y-6 ml-4">
           {/* Header Section */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
@@ -370,7 +370,7 @@ const StudyLibraryT = () => {
                           <CardBody className="p-4">
                             <div className="flex gap-4">
                               <div className="relative">
-                                <Image
+                                <img
                                   src={placeholderImage}
                                   alt={resource.title}
                                   className="w-24 h-24 object-cover rounded-lg"

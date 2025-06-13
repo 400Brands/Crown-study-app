@@ -3,23 +3,27 @@ import { button as buttonStyles } from "@heroui/theme";
 import { siteConfig } from "@/config/site";
 import { title, subtitle } from "@/components/primitives";
 import DefaultLayout from "@/layouts/default";
-import { Card, CardBody, CardFooter, CardHeader, Image, Modal, ModalContent, Tab, Tabs, useDisclosure } from "@heroui/react";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Image,
+} from "@heroui/react";
 import { CheckIcon } from "lucide-react";
 import GetStarted from "@/components/modal";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
 export default function IndexPage() {
-
   return (
     <DefaultLayout>
       {/* Hero Section */}
       <main className="flex flex-col w-full space-y-8">
         <section className="flex flex-col md:flex-row w-full min-h-[80vh] items-center justify-between gap-8 py-6">
           <div className="w-full md:w-1/2 flex items-center justify-center">
-            <Image
-              src={"https://distinction.app/images/hero-image.png"}
-              width={600}
-              alt="CrownStudy App Screenshot"
-              className="w-full h-auto object-cover rounded-lg"
+            <DotLottieReact
+              src="https://lottie.host/c9d99835-7150-422b-a928-2c9171b144da/VEJ9kxpKQg.lottie"
+              loop
+              autoplay
             />
           </div>
 
@@ -28,7 +32,7 @@ export default function IndexPage() {
               <span className={title()}>Introducing</span>
               <br />
               <span className={title({ size: "lg", color: "blue" })}>
-                <b>CrownStudy!</b>
+                <b>CrownStudy App!</b>
               </span>
               <div className={subtitle({ class: "mt-4" })}>
                 <p className="text-md">
@@ -41,7 +45,7 @@ export default function IndexPage() {
             </div>
 
             <div className="mt-6 flex gap-4">
-              <GetStarted size="lg"/>
+              <GetStarted size="lg" />
               <Image
                 src="https://distinction.app/try-for-free.svg"
                 width={100}
@@ -81,10 +85,7 @@ export default function IndexPage() {
           <div className="container mx-auto max-w-7xl px-6">
             <div className="text-center mb-16">
               <h2 className={title({ size: "md" })}>
-                <b>
-                    Powerful Features
-                </b>
-              
+                <b>Powerful Features</b>
               </h2>
               <p className={subtitle({ class: "mt-4 mx-auto max-w-2xl" })}>
                 CrownStudy combines cutting-edge AI technology with
@@ -536,10 +537,10 @@ export default function IndexPage() {
                   <CheckIcon className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium mb-2">Quick-Label Mode</h3>
+                  <h3 className="text-lg font-medium mb-2">Game & Earn Mode</h3>
                   <p className="text-neutral-600 dark:text-neutral-400">
-                    Earn additional points by participating in TII VQA labeling
-                    sessions separate from your academic content.
+                    Earn additional points by participating in recaptcha
+                    sessions separate from your academic content and earn Point
                   </p>
                 </div>
               </div>
@@ -555,6 +556,7 @@ export default function IndexPage() {
                   <p className="text-neutral-600 dark:text-neutral-400">
                     Connect with students from the same department across
                     different institutions for broader knowledge sharing.
+                    (Future)
                   </p>
                 </div>
               </div>
@@ -667,7 +669,7 @@ export default function IndexPage() {
                 className={buttonStyles({
                   color: "primary",
                   radius: "md",
-                  variant: "bordered",
+                  variant: "shadow",
                   size: "lg",
                 })}
                 href="#demo"
@@ -742,10 +744,9 @@ export default function IndexPage() {
                   </summary>
                   <p className="text-neutral-600 dark:text-neutral-400 mt-3 group-open:animate-fadeIn">
                     You earn points by uploading study materials, answering
-                    questions from other students, participating in TII VQA
-                    labeling, and regular engagement with the platform. These
-                    points can be redeemed for rewards or used to unlock premium
-                    features.
+                    questions from other students, participating in GameMode,
+                    and regular engagement with the platform. These points can
+                    be redeemed for rewards or used to unlock premium features.
                   </p>
                 </details>
               </div>
@@ -804,9 +805,8 @@ export default function IndexPage() {
                   <p className="text-neutral-600 dark:text-neutral-400 mt-3 group-open:animate-fadeIn">
                     When you take quizzes on CrownStudy, we incorporate Visual
                     Question Answering (VQA) questions related to your academic
-                    interests. This helps both reinforce your learning and
-                    contribute to AI research. You earn points for each VQA
-                    question you answer.
+                    interests. This helps both reinforce your learning. You earn
+                    points for each question you answer.
                   </p>
                 </details>
               </div>
@@ -869,19 +869,7 @@ export default function IndexPage() {
               </div>
             </div>
 
-            <div className="text-center mt-12">
-              <Link
-                className={buttonStyles({
-                  color: "primary",
-                  radius: "md",
-                  variant: "flat",
-                  size: "md",
-                })}
-                href="#more-faq"
-              >
-                View More FAQs
-              </Link>
-            </div>
+            
           </div>
         </section>
 
@@ -925,7 +913,7 @@ export default function IndexPage() {
                       className={buttonStyles({
                         color: "primary",
                         radius: "md",
-                        variant: "bordered",
+                        variant: "shadow",
                         size: "lg",
                       })}
                       href="#google-play"

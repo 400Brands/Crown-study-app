@@ -77,7 +77,7 @@ const navigationItems: NavGroup[] = [
       {
         name: "Notes Feed",
         icon: Edit3,
-        path: "/dashboard/notes",
+        path: "/dashboard/note-feed",
         notifications: 12,
       },
       {
@@ -99,7 +99,6 @@ const navigationItems: NavGroup[] = [
         isPriority: true,
         color: "text-red-600",
       },
-      
     ],
   },
   {
@@ -135,14 +134,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   return (
-    <div className="flex h-screen  ">
+    <div className="flex h-screen">
       {/* Sidebar */}
       <div
         className={`${
-          expanded ? "w-64" : "w-20"
-        } h-full flex flex-col transition-all duration-300 ease-in-out fixed border-r shadow-md bg-white z-10`}
+          expanded ? "w-64" : "md:w-20 w-0"
+        } h-full flex flex-col transition-all duration-300 ease-in-out fixed border-r shadow-md bg-white z-10 ${
+          !expanded ? "overflow-hidden" : ""
+        }`}
       >
-        <div className="flex-1 py-4 overflow-y-auto">
+        {/* Navigation content - hidden on mobile when collapsed */}
+        <div
+          className={`flex-1 py-4 overflow-y-auto ${!expanded ? "md:block hidden" : ""}`}
+        >
           {navigationItems.map((group) => (
             <div key={group.section} className="mb-6 last:mb-2">
               {expanded && (
@@ -174,7 +178,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           <item.icon
                             size={20}
                             className={
-                              location.pathname.startsWith(item.path) ? "text-indigo-600" : ""
+                              location.pathname.startsWith(item.path)
+                                ? "text-indigo-600"
+                                : ""
                             }
                           />
                           {!expanded && item.notifications && (
@@ -228,7 +234,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           ))}
         </div>
 
-        <div className="absolute -right-3 top-6 z-20">
+        {/* Toggle button - positioned relative to viewport */}
+        <div
+          className={`fixed top-15 z-20 transition-all duration-300 ${
+            expanded ? "left-[245px]" : "md:left-[65px] left-3"
+          }`}
+        >
           <button
             onClick={toggleSidebar}
             className="p-1.5 rounded-full bg-white border shadow-sm hover:bg-gray-50 transition-colors"
@@ -243,10 +254,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </div>
 
+      {/* Main content */}
       <div
         className={`flex-1 flex flex-col ${
-          expanded ? "ml-64" : "ml-20"
-        } transition-all duration-300 py-6 pl-6`}
+          expanded ? "md:ml-64 ml-64" : "md:ml-20 ml-0"
+        } transition-all duration-300 py-6 pl-0`}
       >
         {children}
       </div>

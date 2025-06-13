@@ -15,6 +15,9 @@ import CourseQuizzes from "./pages/dashboard/courses/quizzes";
 import QuizTaking from "./pages/dashboard/courses/QuizTaking";
 import StudyLibrary from "./pages/dashboard/studyLibrary";
 import DashboardPage from "@/pages/dashboard/home";
+import NotesFeed from "./pages/dashboard/notesFeed";
+import ProfileComponent from "./pages/dashboard/profile";
+import Settings from "./pages/dashboard/settings";
 
 function App() {
   return (
@@ -42,8 +45,10 @@ function App() {
         {/* Other dashboard routes */}
         <Route path="library" element={<StudyLibrary />} />
         <Route path="planner" element={<StudyPlanner />} />
+        <Route path="note-feed" element={<NotesFeed />} />
         <Route path="focused-mode" element={<GameMode />} />
-        <Route path="focused-mode" element={<GameMode />} />
+        <Route path="profile" element={<ProfileComponent />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>
   );

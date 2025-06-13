@@ -1,4 +1,4 @@
-//@ts-nocheck
+// @ts-nocheck
 // components/courses/Overview.tsx
 import { useState, useEffect, useCallback, useRef } from "react";
 import { OverviewProps, StudyMaterial, StudyMaterialSectionProps } from "@/types";
@@ -10,7 +10,6 @@ import {
   Divider,
   Progress,
   Badge,
-  Image,
 } from "@heroui/react";
 import {
   BookOpen,
@@ -91,7 +90,7 @@ const StudyMaterialSection = ({
             View All
           </Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {materials.length === 0 ? (
             <div className="col-span-2 text-center py-8 text-gray-500">
               No {title.toLowerCase()} available yet
@@ -100,58 +99,81 @@ const StudyMaterialSection = ({
             materials.map((material) => (
               <div
                 key={material.id}
-                className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                className="flex flex-col justify-between space-y-6 border border-gray-200 rounded-lg overflow-hidden hover:bg-gray-50 transition-colors"
               >
-                <div className="flex justify-between items-start">
-                  <h4 className="font-medium">{material.title}</h4>
-                  <Chip size="sm" variant="flat">
-                    {material[courseKey] as string}
-                  </Chip>
+                {/* Image placeholder */}
+                <div className="w-full h-32 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                  <div className="text-gray-400 text-xs font-medium">
+                    {material.image ? (
+                      <img
+                        src={material.image}
+                        alt={material.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={
+                          "https://res.cloudinary.com/dgbreoalg/image/upload/v1749817594/bookcover_dzo6fl.jpg"
+                        }
+                        alt={material.title}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
                 </div>
 
-                {progressKey && totalKey && (
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="text-sm text-gray-500">
-                      {material[progressKey]}/{material[totalKey]} mastered
-                    </span>
-                    <Progress
-                      size="sm"
-                      value={
-                        (Number(material[progressKey]) /
-                          Number(material[totalKey])) *
-                        100
-                      }
-                      color="secondary"
-                      className="max-w-[100px]"
-                    />
+                <div className="p-4">
+                  <div className="flex justify-between items-start">
+                    <h4 className="font-medium">{material.title}</h4>
+                    <Chip size="sm" variant="flat">
+                      {material[courseKey] as string}
+                    </Chip>
                   </div>
-                )}
 
-                {showLastReviewed && material.lastReviewed && (
-                  <div className="text-xs text-gray-400 mt-2">
-                    Last reviewed:{" "}
-                    {new Date(material.lastReviewed).toLocaleDateString()}
-                  </div>
-                )}
-
-                {showYear && (
-                  <div className="flex items-center gap-4 mt-3">
-                    {material.pages && (
+                  {progressKey && totalKey && (
+                    <div className="flex items-center justify-between mt-3">
                       <span className="text-sm text-gray-500">
-                        {material.pages} pages
+                        {material[progressKey]}/{material[totalKey]} mastered
                       </span>
-                    )}
-                    <span className="text-sm text-gray-500">
-                      {material.year}
-                    </span>
-                  </div>
-                )}
+                      <Progress
+                        size="sm"
+                        value={
+                          (Number(material[progressKey]) /
+                            Number(material[totalKey])) *
+                          100
+                        }
+                        color="secondary"
+                        className="max-w-[100px]"
+                      />
+                    </div>
+                  )}
 
-                {showDownloads && (
-                  <div className="text-xs text-gray-400 mt-2">
-                    Downloaded {material.downloads} times
-                  </div>
-                )}
+                  {showLastReviewed && material.lastReviewed && (
+                    <div className="text-xs text-gray-400 mt-2">
+                      Last reviewed:{" "}
+                      {new Date(material.lastReviewed).toLocaleDateString()}
+                    </div>
+                  )}
+
+                  {showYear && (
+                    <div className="flex items-center gap-4 mt-3">
+                      {material.pages && (
+                        <span className="text-sm text-gray-500">
+                          {material.pages} pages
+                        </span>
+                      )}
+                      <span className="text-sm text-gray-500">
+                        {material.year}
+                      </span>
+                    </div>
+                  )}
+
+                  {showDownloads && (
+                    <div className="text-xs text-gray-400 mt-2">
+                      Downloaded {material.downloads} times
+                    </div>
+                  )}
+                </div>
               </div>
             ))
           )}
@@ -453,12 +475,12 @@ const Overview = ({
           >
             <CardBody className="p-0 overflow-hidden">
               <div className="relative">
-                <Image
+                <img
                   src={course.thumbnail}
                   alt={course.title}
                   className="w-full object-cover"
                 />
-                <div className="absolute top-4 left-4">
+                <div className="absolute top-4 left-4 z-1">
                   <div
                     className={`${course.color} w-10 h-10 rounded-lg flex items-center justify-center text-white`}
                   >

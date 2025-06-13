@@ -29,40 +29,9 @@ import {
 import { supabase } from "@/supabaseClient";
 import DefaultLayout from "@/layouts/default";
 import DashboardLayout from "@/layouts/dashboardLayout";
+import { Quiz, QuizOption, QuizQuestion, UserAnswer } from "@/types";
 
-// Types
-interface QuizOption {
-  id: string;
-  text: string;
-  isCorrect: boolean;
-}
 
-interface QuizQuestion {
-  id: string;
-  quiz_id: string;
-  question_text: string;
-  options: QuizOption[];
-  correct_answer_id: string;
-  explanation?: string;
-  order: number;
-}
-
-interface Quiz {
-  id: string;
-  title: string;
-  course: string;
-  questions: number;
-  completed: number;
-  due_date: string;
-  status: "not-started" | "in-progress" | "completed";
-  user_id: string;
-}
-
-interface UserAnswer {
-  question_id: string;
-  selected_option_id: string;
-  is_correct: boolean;
-}
 
 const QuizTaking = () => {
   const { quizId } = useParams<{ quizId: string }>();
@@ -363,49 +332,56 @@ const QuizTaking = () => {
   return (
     <DefaultLayout>
       <DashboardLayout>
-        <div className="max-w-4xl mx-auto p-6 space-y-6">
+        <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-4 space-y-4 sm:space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <Button
               variant="light"
               startContent={<ArrowLeft size={16} />}
               onPress={() => navigate("/dashboard/courses")}
+              size="sm"
+              className="self-start sm:self-auto"
             >
               Back to Quizzes
             </Button>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-normal">
               {isReviewMode && (
                 <Button
                   variant="bordered"
                   color="warning"
                   startContent={<RotateCcw size={16} />}
                   onPress={handleResetQuiz}
+                  size="sm"
+                  className="shrink-0"
                 >
                   Reset Quiz
                 </Button>
               )}
 
               {!isReviewMode && (
-                <div className="flex items-center gap-2 text-orange-600">
+                <div className="flex items-center gap-2 text-orange-600 bg-orange-50 px-3 py-1.5 rounded-full">
                   <Clock size={16} />
-                  <span className="font-mono text-lg">
+                  <span className="font-mono text-sm font-medium">
                     {formatTime(timeLeft)}
                   </span>
                 </div>
               )}
             </div>
           </div>
+
           {/* Quiz Info */}
-          <Card>
-            <CardBody className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h1 className="text-2xl font-bold">{quiz.title}</h1>
-                  <p className="text-gray-600">{quiz.course}</p>
+          <Card className="w-full">
+            <CardBody className="p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-4 mb-4">
+                <div className="space-y-1">
+                  <h1 className="text-lg sm:text-xl font-bold line-clamp-2">
+                    {quiz.title}
+                  </h1>
+                  <p className="text-gray-600 text-sm">{quiz.course}</p>
                 </div>
                 <Chip
-                  size="lg"
+                  size="sm"
                   variant="flat"
                   color={isReviewMode ? "success" : "primary"}
                   startContent={
@@ -417,7 +393,7 @@ const QuizTaking = () => {
               </div>
 
               <div className="space-y-3">
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs">
                   <span>
                     Question {currentQuestionIndex + 1} of {questions.length}
                   </span>
@@ -426,6 +402,7 @@ const QuizTaking = () => {
                   </span>
                 </div>
                 <Progress
+                  size="sm"
                   value={progressPercentage}
                   classNames={{
                     indicator: "bg-gradient-to-r from-blue-500 to-indigo-600",
@@ -434,10 +411,10 @@ const QuizTaking = () => {
               </div>
 
               {showResults && score && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-semibold">Final Score:</span>
-                    <span className="text-2xl font-bold text-blue-600">
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-1">
+                    <span className="text-sm font-semibold">Final Score:</span>
+                    <span className="text-lg font-bold text-blue-600">
                       {score.correct}/{score.total} (
                       {Math.round((score.correct / score.total) * 100)}%)
                     </span>
@@ -446,11 +423,12 @@ const QuizTaking = () => {
               )}
             </CardBody>
           </Card>
+
           {/* Question Card */}
-          <Card>
-            <CardBody className="p-8">
-              <div className="space-y-6">
-                <h2 className="text-xl font-semibold leading-relaxed">
+          <Card className="w-full">
+            <CardBody className="p-4 sm:p-6">
+              <div className="space-y-4">
+                <h2 className="text-base sm:text-lg font-semibold leading-relaxed">
                   {currentQuestion.question_text}
                 </h2>
 
@@ -460,13 +438,14 @@ const QuizTaking = () => {
                     handleAnswerChange(currentQuestion.id, value)
                   }
                   isDisabled={isReviewMode}
+                  className="gap-2"
                 >
                   {currentQuestion.options.map((option) => (
                     <Radio
                       key={option.id}
                       value={option.id}
                       classNames={{
-                        base: `max-w-full m-0 p-4 rounded-lg border-2 transition-all ${
+                        base: `max-w-full m-0 p-3 rounded-lg border-2 transition-all ${
                           getOptionColor(currentQuestion, option) === "success"
                             ? "border-green-200 bg-green-50"
                             : getOptionColor(currentQuestion, option) ===
@@ -474,31 +453,38 @@ const QuizTaking = () => {
                               ? "border-red-200 bg-red-50"
                               : "border-gray-200 hover:border-blue-200"
                         }`,
+                        label: "text-sm",
                       }}
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="text-base">{option.text}</span>
+                      <div className="flex items-center gap-2">
+                        <span>{option.text}</span>
                         {isReviewMode &&
                           option.id === currentQuestion.correct_answer_id && (
-                            <CheckCircle size={20} className="text-green-600" />
+                            <CheckCircle
+                              size={16}
+                              className="text-green-600 shrink-0"
+                            />
                           )}
                         {isReviewMode &&
                           option.id === userAnswers.get(currentQuestion.id) &&
                           !option.isCorrect && (
-                            <XCircle size={20} className="text-red-600" />
+                            <XCircle
+                              size={16}
+                              className="text-red-600 shrink-0"
+                            />
                           )}
                       </div>
                     </Radio>
                   ))}
                 </RadioGroup>
 
-                {/* Explanation (shown in review mode) */}
+                {/* Explanation */}
                 {isReviewMode && currentQuestion.explanation && (
-                  <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h4 className="font-semibold text-blue-900 mb-2">
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 className="font-semibold text-blue-900 mb-1 text-sm">
                       Explanation:
                     </h4>
-                    <p className="text-blue-800">
+                    <p className="text-blue-800 text-sm">
                       {currentQuestion.explanation}
                     </p>
                   </div>
@@ -506,21 +492,25 @@ const QuizTaking = () => {
               </div>
             </CardBody>
           </Card>
+
           {/* Navigation */}
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
             <Button
               variant="bordered"
               onPress={handlePreviousQuestion}
               isDisabled={currentQuestionIndex === 0}
+              size="sm"
+              className="w-full sm:w-auto"
             >
               Previous
             </Button>
 
-            <div className="flex gap-2">
+            <div className="flex gap-1 overflow-x-auto w-full sm:w-auto px-1 py-2">
               {questions.map((_, index) => (
                 <Button
                   key={index}
                   size="sm"
+                  isIconOnly
                   variant={
                     index === currentQuestionIndex ? "solid" : "bordered"
                   }
@@ -534,7 +524,6 @@ const QuizTaking = () => {
                         : "default"
                   }
                   onPress={() => setCurrentQuestionIndex(index)}
-                  className="min-w-10"
                 >
                   {index + 1}
                 </Button>
@@ -547,6 +536,8 @@ const QuizTaking = () => {
                   color="primary"
                   onPress={onSubmitModalOpen}
                   isDisabled={answeredQuestions < questions.length}
+                  size="sm"
+                  className="w-full sm:w-auto"
                 >
                   Submit Quiz
                 </Button>
@@ -555,20 +546,28 @@ const QuizTaking = () => {
                   variant="bordered"
                   startContent={<RotateCcw size={16} />}
                   onPress={() => navigate("/dashboard/courses")}
+                  size="sm"
+                  className="w-full sm:w-auto"
                 >
                   Back to Quizzes
                 </Button>
               )
             ) : (
-              <Button color="primary" onPress={handleNextQuestion}>
+              <Button
+                color="primary"
+                onPress={handleNextQuestion}
+                size="sm"
+                className="w-full sm:w-auto"
+              >
                 Next
               </Button>
             )}
           </div>
+
           {/* Submit Confirmation Modal */}
           <Modal isOpen={isSubmitModalOpen} onClose={onSubmitModalClose}>
             <ModalContent>
-              <ModalHeader>Submit Quiz</ModalHeader>
+              <ModalHeader className="text-lg">Submit Quiz</ModalHeader>
               <ModalBody>
                 <p>Are you sure you want to submit your quiz?</p>
                 <p className="text-sm text-gray-600">
@@ -579,13 +578,14 @@ const QuizTaking = () => {
                 </p>
               </ModalBody>
               <ModalFooter>
-                <Button variant="light" onPress={onSubmitModalClose}>
+                <Button variant="light" onPress={onSubmitModalClose} size="sm">
                   Cancel
                 </Button>
                 <Button
                   color="primary"
                   onPress={handleSubmitQuiz}
                   isLoading={submitting}
+                  size="sm"
                 >
                   Submit
                 </Button>

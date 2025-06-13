@@ -1,28 +1,28 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Vite + HeroUI",
-  description: "Make beautiful websites regardless of your design experience.",
+  name: "CrownStudy",
+  description: "Your ultimate companion for academic success.",
   navItems: [
     {
       label: "Home",
       href: "/",
     },
     {
-      label: "Docs",
-      href: "/docs",
+      label: "Features",
+      href: "/#",
     },
     {
-      label: "Pricing",
-      href: "/pricing",
+      label: "How it works",
+      href: "/#",
     },
     {
-      label: "Blog",
-      href: "/blog",
+      label: "Testimonies",
+      href: "/#",
     },
     {
-      label: "About",
-      href: "/about",
+      label: "About Us",
+      href: "/#",
     },
   ],
   navMenuItems: [

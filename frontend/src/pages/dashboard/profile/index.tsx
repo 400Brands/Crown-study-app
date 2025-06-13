@@ -224,16 +224,20 @@ const ProfileComponent = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <p>Loading profile...</p>
-      </div>
+      <DefaultLayout>
+        <DashboardLayout>
+          <div className="flex justify-center items-center h-64">
+            <p>Loading profile...</p>
+          </div>
+        </DashboardLayout>
+      </DefaultLayout>
     );
   }
 
   return (
     <DefaultLayout>
       <DashboardLayout>
-        <div className="space-y-6">
+        <div className="space-y-6 ml-4">
           {!profile.profile_complete && (
             <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
               <CardBody className="p-6">

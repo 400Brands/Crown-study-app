@@ -108,7 +108,7 @@ const MyCourses = () => {
   return (
     <DefaultLayout>
       <DashboardLayout>
-        <div className="space-y-6">
+        <div className="space-y-6 px-4">
           {/* Tabs Navigation */}
           <Tabs
             aria-label="Course sections"

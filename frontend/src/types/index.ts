@@ -288,3 +288,38 @@ export interface LoadingStates {
   leaderboards: boolean;
   progress: boolean;
 }
+
+//
+// Types
+export interface QuizOption {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+}
+
+export interface QuizQuestion {
+  id: string;
+  quiz_id: string;
+  question_text: string;
+  options: QuizOption[];
+  correct_answer_id: string;
+  explanation?: string;
+  order: number;
+}
+
+export interface Quiz {
+  id: string;
+  title: string;
+  course: string;
+  questions: number;
+  completed: number;
+  due_date: string;
+  status: "not-started" | "in-progress" | "completed";
+  user_id: string;
+}
+
+export interface UserAnswer {
+  question_id: string;
+  selected_option_id: string;
+  is_correct: boolean;
+}

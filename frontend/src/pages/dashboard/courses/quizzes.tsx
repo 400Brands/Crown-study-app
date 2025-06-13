@@ -8,6 +8,7 @@ import {
   Progress,
   Pagination,
   useDisclosure,
+  Spinner,
 } from "@heroui/react";
 import { FileText, Clock, ChevronRight, FileUp, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -176,7 +177,11 @@ const CourseQuizzes = () => {
   };
 
   if (loading) {
-    return <div>Loading quizzes...</div>;
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Spinner size="lg" label="Loading flashcard decks..." />
+      </div>
+    );
   }
 
   if (error) {

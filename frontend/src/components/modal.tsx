@@ -5,12 +5,14 @@ import {
   ModalBody,
   Button,
   useDisclosure,
+  Avatar,
 } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/supabaseClient";
 import { Session } from "@supabase/supabase-js";
+import { useNavigate, useLocation } from "react-router-dom";
 
 // Define the allowed size types
 type ButtonSize = "sm" | "md" | "lg";
@@ -22,6 +24,8 @@ interface GetStartedProps {
 
 export default function GetStarted({ size }: GetStartedProps) {
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const navigate = useNavigate();
+  const location = useLocation(); // Add location hook to check current route
 
   const handleOpen = () => {
     onOpen();
@@ -43,11 +47,9 @@ export default function GetStarted({ size }: GetStartedProps) {
     return () => subscription.unsubscribe();
   }, []);
 
-  console.log(session?.user?.email);
-
-  const signOut = async () => {
-    const {error} = await supabase.auth.signOut();
-  }
+  const navigateToDashboard = () => {
+    navigate("/dashboard");
+  };
 
   const renderAuthContent = () => {
     if (!session) {
@@ -64,6 +66,23 @@ export default function GetStarted({ size }: GetStartedProps) {
     }
   };
 
+  // Check if current route is /dashboard
+  const isDashboardRoute = location.pathname === "/";
+
+  // If on dashboard route and user is logged in, show avatar
+  if (!isDashboardRoute && session) {
+    return (
+      <Avatar
+        isBordered
+        color="success"
+        src={session.user?.user_metadata?.avatar_url}
+        name={session.user?.user_metadata?.full_name || session.user?.email}
+        size={size}
+        showFallback
+      />
+    );
+  }
+
   return (
     <>
       <div className="flex flex-wrap gap-3">
@@ -78,10 +97,10 @@ export default function GetStarted({ size }: GetStartedProps) {
         ) : (
           <Button
             size={size}
-            onPress={() => signOut()}
+            onPress={() => navigateToDashboard()}
             className="bg-primary text-default-100"
           >
-            Sign Out
+            Dashboard
           </Button>
         )}
       </div>

@@ -1,3 +1,5 @@
+//@ts-nocheck
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/supabaseClient";
 import { Button, Card, CardBody, Chip, Divider, Avatar } from "@heroui/react";

@@ -196,7 +196,6 @@ const UploadModal: React.FC<UploadModalProps> = ({
   return (
     <Modal isOpen={isOpen} onOpenChange={handleClose} size="2xl">
       <ModalContent>
-        {(onModalClose) => (
           <>
             <ModalHeader className="flex flex-col gap-1">
               Upload New Resource
@@ -332,7 +331,6 @@ const UploadModal: React.FC<UploadModalProps> = ({
               </Button>
             </ModalFooter>
           </>
-        )}
       </ModalContent>
     </Modal>
   );

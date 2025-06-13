@@ -2,11 +2,9 @@ import { useState } from "react";
 import {
   Home,
   Layers,
-  Tag,
   Library,
   Calendar,
   Edit3,
-  Award,
   User,
   UploadCloud,
   Settings,

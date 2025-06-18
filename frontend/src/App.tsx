@@ -19,10 +19,12 @@ import NotesFeed from "./pages/dashboard/notesFeed";
 import ProfileComponent from "./pages/dashboard/profile";
 import Settings from "./pages/dashboard/settings";
 import Opportunities from "./pages/dashboard/opportunities";
+import { GameProvider } from "./pages/dashboard/context/GameProvider";
 
 function App() {
   return (
-    <Routes>
+    <GameProvider>
+      <Routes>
       {/* Public Routes */}
       <Route path="/" element={<IndexPage />} />
       <Route path="/docs" element={<DocsPage />} />
@@ -54,6 +56,8 @@ function App() {
         <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>
+    </GameProvider>
+    
   );
 }
 

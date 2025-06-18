@@ -14,6 +14,7 @@ import { supabase } from "@/supabaseClient";
 import { Session } from "@supabase/supabase-js";
 import { useNavigate, useLocation } from "react-router-dom";
 
+
 // Define the allowed size types
 type ButtonSize = "sm" | "md" | "lg";
 
@@ -28,7 +29,7 @@ export default function GetStarted({ size }: GetStartedProps) {
   const location = useLocation();
 
   const [session, setSession] = useState<Session | null>(null);
-  const [userPoints, setUserPoints] = useState<number>(1250); // Mocked value for now
+ 
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -74,13 +75,7 @@ export default function GetStarted({ size }: GetStartedProps) {
       <div className="flex  items-center gap-3 p-2 bg-white rounded-lg  ">
         {/* Avatar */}
 
-        {/* Points Info */}
-        <div className="flex flex-col text-sm">
-          <span className="text-gray-500">
-            Points: <span className="font-bold text-primary">{userPoints}</span>
-          </span>
-          
-        </div>
+        
 
         <Avatar
           isBordered

@@ -1,6 +1,6 @@
 //@ts-nocheck
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardBody,
@@ -10,7 +10,6 @@ import {
   Select,
   SelectItem,
   Pagination,
-  Image,
   Spinner,
 } from "@heroui/react";
 import {
@@ -26,14 +25,45 @@ import {
   FileText,
   FileSpreadsheet,
   FileImage,
+  AlertTriangle,
 } from "lucide-react";
 import { supabase } from "@/supabaseClient";
 import DefaultLayout from "@/layouts/default";
 import DashboardLayout from "@/layouts/dashboardLayout";
 import UploadModal from "./studyLibrary/uploadModal";
 
-const StudyLibraryT = () => {
-  const [resources, setResources] = useState([]);
+interface Resource {
+  id: string;
+  title: string;
+  type: string;
+  course: string;
+  year: string;
+  description?: string;
+  file_url?: string;
+  file_size?: number;
+  pages?: number;
+  duration?: string;
+  is_new: boolean;
+  is_featured?: boolean;
+  rating: number;
+  downloads: number;
+  created_at: string;
+}
+
+interface ResourceType {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+}
+
+interface DownloadError {
+  resourceId: string;
+  error: string;
+  timestamp: Date;
+}
+
+const StudyLibrary: React.FC = () => {
+  const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
@@ -41,9 +71,12 @@ const StudyLibraryT = () => {
   const [sortBy, setSortBy] = useState("popular");
   const [currentPage, setCurrentPage] = useState(1);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
+  const [downloadErrors, setDownloadErrors] = useState<DownloadError[]>([]);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const itemsPerPage = 6;
 
-  const resourceTypes = [
+  const resourceTypes: ResourceType[] = [
     { label: "All Resources", value: "all", icon: <LibraryBig size={16} /> },
     { label: "Textbooks", value: "textbook", icon: <BookOpen size={16} /> },
     { label: "Lecture Notes", value: "notes", icon: <FileText size={16} /> },
@@ -59,7 +92,7 @@ const StudyLibraryT = () => {
     },
   ];
 
-  const courses = [
+  const courses: string[] = [
     "CSC 101",
     "CSC 201",
     "CSC 301",
@@ -68,15 +101,25 @@ const StudyLibraryT = () => {
     "CSC 501",
   ];
 
-  // Fetch resources from Supabase
-  const fetchResources = async () => {
+  // Enhanced error handling for user notifications
+  const showUserError = (message: string, details?: string) => {
+    const fullMessage = details ? `${message}\n\nDetails: ${details}` : message;
+    alert(fullMessage);
+  };
+
+  // Enhanced fetch resources with comprehensive error handling
+  const fetchResources = async (): Promise<void> => {
+    setFetchError(null);
+
     try {
       setLoading(true);
+
       let query = supabase
         .from("resources")
         .select("*")
         .order("created_at", { ascending: false });
 
+      // Apply filters with logging
       if (courseFilter !== "all") {
         query = query.eq("course", courseFilter);
       }
@@ -85,76 +128,248 @@ const StudyLibraryT = () => {
         query = query.eq("type", typeFilter);
       }
 
-      if (searchTerm) {
-        query = query.ilike("title", `%${searchTerm}%`);
+      if (searchTerm.trim()) {
+        query = query.ilike("title", `%${searchTerm.trim()}%`);
       }
 
-      const { data, error } = await query;
+      const { data } = await query;
 
-      if (error) throw error;
+      if (!data) {
+        setResources([]);
+        return;
+      }
 
-      // Sort the data
-      let sortedData = [...(data || [])];
-      switch (sortBy) {
-        case "recent":
-          sortedData.sort(
-            (a, b) => new Date(b.created_at) - new Date(a.created_at)
-          );
-          break;
-        case "rating":
-          sortedData.sort((a, b) => b.rating - a.rating);
-          break;
-        case "popular":
-        default:
-          sortedData.sort((a, b) => b.downloads - a.downloads);
-          break;
+      // Sort the data with error handling
+      let sortedData: Resource[] = [...data];
+      try {
+        switch (sortBy) {
+          case "recent":
+            sortedData.sort(
+              (a, b) =>
+                new Date(b.created_at).getTime() -
+                new Date(a.created_at).getTime()
+            );
+            break;
+          case "rating":
+            sortedData.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+            break;
+          case "popular":
+          default:
+            sortedData.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
+            break;
+        }
+      } catch (sortError) {
+        // Continue with unsorted data rather than failing completely
       }
 
       setResources(sortedData);
     } catch (error) {
-      console.error("Error fetching resources:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+
+      setFetchError(errorMessage);
+      setResources([]);
+      showUserError("Failed to load resources", errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle download (increment counter)
-  const handleDownload = async (resourceId, currentDownloads) => {
+  // Enhanced download handler with comprehensive logging and error handling
+  const handleDownload = async (resource: Resource): Promise<void> => {
+    // Validate resource data
+    if (!resource.file_url) {
+      const errorMsg = "No file URL available for download";
+      showUserError(errorMsg);
+      return;
+    }
+
+    if (!resource.id) {
+      const errorMsg = "Invalid resource ID";
+      showUserError(errorMsg);
+      return;
+    }
+
+    // Check if already downloading
+    if (downloadingIds.has(resource.id)) {
+      return;
+    }
+
     try {
+      // Set downloading state
+      setDownloadingIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.add(resource.id);
+        return newSet;
+      });
+
+      // Step 1: Update download counter in database
+      const newDownloadCount = (resource.downloads || 0) + 1;
+
       await supabase
         .from("resources")
-        .update({ downloads: currentDownloads + 1 })
-        .eq("id", resourceId);
+        .update({ downloads: newDownloadCount })
+        .eq("id", resource.id);
 
-      fetchResources();
+      // Step 2: Fetch the file
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 30000); // 30 second timeout
+
+      const response = await fetch(resource.file_url, {
+        method: "GET",
+        signal: controller.signal,
+        headers: {
+          Accept: "*/*",
+        },
+      });
+
+      clearTimeout(timeoutId);
+
+      // Check content type
+      const contentType = response.headers.get("content-type");
+
+      // Step 3: Convert to blob
+      const blob = await response.blob();
+
+      if (blob.size === 0) {
+        throw new Error("Downloaded file is empty");
+      }
+
+      // Step 4: Create download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+
+      // Extract filename from URL or use title with proper extension
+      let filename: string;
+      try {
+        const urlParts = resource.file_url.split("/");
+        const urlFilename = urlParts[urlParts.length - 1];
+
+        if (urlFilename && urlFilename.includes(".")) {
+          filename = decodeURIComponent(urlFilename);
+        } else {
+          // Determine extension based on content type or default to PDF
+          let extension = ".pdf";
+          if (contentType) {
+            if (contentType.includes("image")) extension = ".jpg";
+            else if (contentType.includes("text")) extension = ".txt";
+            else if (
+              contentType.includes("excel") ||
+              contentType.includes("spreadsheet")
+            )
+              extension = ".xlsx";
+            else if (contentType.includes("word")) extension = ".docx";
+          }
+          filename = `${resource.title.replace(/[^a-zA-Z0-9\s]/g, "")}${extension}`;
+        }
+      } catch (filenameError) {
+        filename = `${resource.title.replace(/[^a-zA-Z0-9\s]/g, "")}.pdf`;
+      }
+
+      link.download = filename;
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      // Step 5: Refresh resources to show updated download count
+      await fetchResources();
     } catch (error) {
-      console.error("Error updating downloads:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown download error";
+      const downloadError: DownloadError = {
+        resourceId: resource.id,
+        error: errorMessage,
+        timestamp: new Date(),
+      };
+
+      setDownloadErrors((prev) => [...prev, downloadError]);
+
+      // Provide specific error messages based on error type
+      let userMessage = "Failed to download file";
+      if (errorMessage.includes("HTTP")) {
+        userMessage = "File server is not responding. Please try again later.";
+      } else if (
+        errorMessage.includes("timeout") ||
+        errorMessage.includes("aborted")
+      ) {
+        userMessage =
+          "Download timed out. Please check your connection and try again.";
+      } else if (
+        errorMessage.includes("network") ||
+        errorMessage.includes("fetch")
+      ) {
+        userMessage =
+          "Network error occurred. Please check your internet connection.";
+      }
+
+      showUserError(userMessage, errorMessage);
+    } finally {
+      // Always remove from downloading set
+      setDownloadingIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(resource.id);
+        return newSet;
+      });
     }
   };
 
-  // Handle successful upload
-  const handleUploadSuccess = () => {
+  // Handle successful upload with logging
+  const handleUploadSuccess = (): void => {
     setIsUploadModalOpen(false);
     fetchResources();
   };
 
+  // Enhanced useEffect with error handling
   useEffect(() => {
-    fetchResources();
+    const timeoutId = setTimeout(() => {
+      fetchResources();
+    }, 300); // Debounce to avoid too many API calls
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, [searchTerm, courseFilter, typeFilter, sortBy]);
 
-  // Pagination
-  const totalPages = Math.ceil(resources.length / itemsPerPage);
+  // Clear old download errors periodically
+  useEffect(() => {
+    const cleanup = setInterval(() => {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+      setDownloadErrors((prev) =>
+        prev.filter((error) => error.timestamp > oneHourAgo)
+      );
+    }, 60000); // Check every minute
+
+    return () => clearInterval(cleanup);
+  }, []);
+
+  // Pagination calculations with error handling
+  const totalPages = Math.max(1, Math.ceil(resources.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedResources = resources.slice(
+  const paginatedResources: Resource[] = resources.slice(
     startIndex,
     startIndex + itemsPerPage
   );
 
-  const featuredResources = resources.filter((r) => r.is_featured);
+  const featuredResources: Resource[] = resources
+    .sort(() => 0.5 - Math.random())
+    .slice(0, 3);
 
   // Placeholder image URL
-  const placeholderImage =
+  const placeholderImage: string =
     "https://imgs.search.brave.com/vXmnKh72ckf3x4CjZY4NAekzxi0I4dZGwGOo3xTceNY/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9sZWFy/bmluZy5vcmVpbGx5/LmNvbS9jb3ZlcnMv/dXJuOm9ybTpib29r/Ojk3ODEwOTgxNTI2/MDQvNDAwdy8";
+
+  const placeholderImage1: string =
+    "https://res.cloudinary.com/dgbreoalg/image/upload/v1725004015/samples/cup-on-a-table.jpg";
 
   return (
     <DefaultLayout>
@@ -181,6 +396,25 @@ const StudyLibraryT = () => {
             </Button>
           </div>
 
+          {/* Recent Download Errors */}
+          {downloadErrors.length > 0 && (
+            <Card className="border-yellow-200 bg-yellow-50">
+              <CardBody className="p-4">
+                <div className="flex items-center gap-2 text-yellow-700 mb-2">
+                  <AlertTriangle size={16} />
+                  <span className="font-medium">Recent Download Issues:</span>
+                </div>
+                <div className="space-y-1 text-sm">
+                  {downloadErrors.slice(-3).map((error, index) => (
+                    <div key={index} className="text-yellow-600">
+                      {error.timestamp.toLocaleTimeString()}: {error.error}
+                    </div>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          )}
+
           {/* Filters and Search */}
           <Card className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100">
             <CardBody className="p-4">
@@ -202,13 +436,9 @@ const StudyLibraryT = () => {
                     <BookOpen size={18} className="text-gray-400" />
                   }
                 >
-                  <SelectItem key="all" >
-                    All Courses
-                  </SelectItem>
+                  <SelectItem key="all">All Courses</SelectItem>
                   {courses.map((course) => (
-                    <SelectItem key={course} value={course}>
-                      {course}
-                    </SelectItem>
+                    <SelectItem key={course}>{course}</SelectItem>
                   ))}
                 </Select>
                 <Select
@@ -220,11 +450,7 @@ const StudyLibraryT = () => {
                   startContent={<Filter size={18} className="text-gray-400" />}
                 >
                   {resourceTypes.map((type) => (
-                    <SelectItem
-                      key={type.value}
-                      value={type.value}
-                      startContent={type.icon}
-                    >
+                    <SelectItem key={type.value} startContent={type.icon}>
                       {type.label}
                     </SelectItem>
                   ))}
@@ -246,7 +472,7 @@ const StudyLibraryT = () => {
                     <Star className="text-yellow-500" size={20} />
                     Featured Resources
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {featuredResources.map((resource) => (
                       <Card
                         key={resource.id}
@@ -254,8 +480,8 @@ const StudyLibraryT = () => {
                       >
                         <CardBody className="p-0 overflow-hidden">
                           <div className="relative">
-                            <Image
-                              src={placeholderImage}
+                            <img
+                              src={placeholderImage1}
                               alt={resource.title}
                               className="w-full h-48 object-cover"
                             />
@@ -288,24 +514,31 @@ const StudyLibraryT = () => {
                                   size={16}
                                 />
                                 <span className="font-medium">
-                                  {resource.rating}
+                                  {resource.rating || 0}
                                 </span>
                                 <span className="text-gray-500 text-sm ml-1">
-                                  ({resource.downloads})
+                                  ({resource.downloads || 0})
                                 </span>
                               </div>
                               <Button
                                 size="sm"
                                 color="primary"
                                 variant="flat"
-                                onPress={() =>
-                                  handleDownload(
-                                    resource.id,
-                                    resource.downloads
+                                isLoading={downloadingIds.has(resource.id)}
+                                isDisabled={
+                                  !resource.file_url ||
+                                  downloadingIds.has(resource.id)
+                                }
+                                onPress={() => handleDownload(resource)}
+                                startContent={
+                                  !downloadingIds.has(resource.id) && (
+                                    <Download size={16} />
                                   )
                                 }
                               >
-                                Download
+                                {downloadingIds.has(resource.id)
+                                  ? "Downloading..."
+                                  : "Download"}
                               </Button>
                             </div>
                           </div>
@@ -333,15 +566,9 @@ const StudyLibraryT = () => {
                       }
                       className="w-40"
                     >
-                      <SelectItem key="popular" >
-                        Most Popular
-                      </SelectItem>
-                      <SelectItem key="recent" >
-                        Most Recent
-                      </SelectItem>
-                      <SelectItem key="rating" >
-                        Highest Rating
-                      </SelectItem>
+                      <SelectItem key="popular">Most Popular</SelectItem>
+                      <SelectItem key="recent">Most Recent</SelectItem>
+                      <SelectItem key="rating">Highest Rating</SelectItem>
                     </Select>
                   </div>
                 </div>
@@ -354,8 +581,9 @@ const StudyLibraryT = () => {
                         className="text-gray-300 mx-auto mb-4"
                       />
                       <p className="text-gray-500">
-                        No resources found. Try adjusting your filters or upload
-                        the first resource!
+                        {fetchError
+                          ? "Unable to load resources due to an error."
+                          : "No resources found. Try adjusting your filters or upload the first resource!"}
                       </p>
                     </CardBody>
                   </Card>
@@ -403,10 +631,11 @@ const StudyLibraryT = () => {
                                 <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
                                   {resource.type === "video" ? (
                                     <>
-                                      <Clock size={14} /> {resource.duration}
+                                      <Clock size={14} />{" "}
+                                      {resource.duration || "N/A"}
                                     </>
                                   ) : (
-                                    <>{resource.pages} pages</>
+                                    <>{resource.pages || 0} pages</>
                                   )}
                                 </div>
                                 <div className="flex justify-between items-center mt-3">
@@ -416,21 +645,29 @@ const StudyLibraryT = () => {
                                       size={14}
                                     />
                                     <span className="text-sm font-medium">
-                                      {resource.rating}
+                                      {resource.rating || 0}
                                     </span>
                                   </div>
                                   <Button
                                     size="sm"
                                     variant="flat"
-                                    startContent={<Download size={16} />}
-                                    onPress={() =>
-                                      handleDownload(
-                                        resource.id,
-                                        resource.downloads
+                                    isLoading={downloadingIds.has(resource.id)}
+                                    isDisabled={
+                                      !resource.file_url ||
+                                      downloadingIds.has(resource.id)
+                                    }
+                                    startContent={
+                                      !downloadingIds.has(resource.id) && (
+                                        <Download size={16} />
                                       )
                                     }
+                                    onPress={() => handleDownload(resource)}
                                   >
-                                    {resource.downloads.toLocaleString()}
+                                    {downloadingIds.has(resource.id)
+                                      ? "..."
+                                      : (
+                                          resource.downloads || 0
+                                        ).toLocaleString()}
                                   </Button>
                                 </div>
                               </div>
@@ -468,4 +705,4 @@ const StudyLibraryT = () => {
   );
 };
 
-export default StudyLibraryT;
+export default StudyLibrary;

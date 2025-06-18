@@ -6,7 +6,6 @@ import {
   Button,
   useDisclosure,
   Avatar,
-  Badge,
 } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { Auth } from "@supabase/auth-ui-react";
@@ -44,6 +43,10 @@ export default function GetStarted({ size }: GetStartedProps) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const handleOpen = () => {
+    onOpen();
+  };
 
   const navigateToDashboard = () => {
     navigate("/dashboard");

@@ -18,6 +18,7 @@ import DashboardPage from "@/pages/dashboard/home";
 import NotesFeed from "./pages/dashboard/notesFeed";
 import ProfileComponent from "./pages/dashboard/profile";
 import Settings from "./pages/dashboard/settings";
+import Opportunities from "./pages/dashboard/opportunities";
 
 function App() {
   return (
@@ -47,6 +48,8 @@ function App() {
         <Route path="planner" element={<StudyPlanner />} />
         <Route path="note-feed" element={<NotesFeed />} />
         <Route path="focused-mode" element={<GameMode />} />
+        <Route path="opportunities" element={<Opportunities />} />
+
         <Route path="profile" element={<ProfileComponent />} />
         <Route path="settings" element={<Settings />} />
       </Route>

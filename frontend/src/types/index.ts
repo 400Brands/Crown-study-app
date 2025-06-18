@@ -32,11 +32,12 @@ export type Question = {
 
 export type QuizConfig = {
   title: string;
-  courseId: string;
+  course: string; // Changed from courseId to course
   questionCount: number;
   difficultyLevel: "easy" | "medium" | "hard" | "mixed";
   questionTypes: ("multiple-choice" | "true-false" | "short-answer")[];
-};
+}
+
 
 export interface PDFQuizGeneratorModalProps {
   isOpen: boolean;

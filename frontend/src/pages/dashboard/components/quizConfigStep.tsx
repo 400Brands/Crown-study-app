@@ -1,7 +1,7 @@
 //@ts-nocheck
 
 // src/components/modals/QuizConfigStep.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Input,
@@ -61,7 +61,7 @@ export default function QuizConfigStep({
 }: QuizConfigStepProps) {
   const [quizConfig, setQuizConfig] = useState<QuizConfig>({
     title: "",
-    courseId: "",
+    course: "",
     questionCount: 10,
     difficultyLevel: "medium",
     questionTypes: ["multiple-choice"],
@@ -108,7 +108,6 @@ export default function QuizConfigStep({
       return fullText;
     } catch (error) {
       console.error("PDF extraction error:", error);
-      throw new Error(`Failed to extract text: ${error.message}`);
     }
   };
 
@@ -163,35 +162,11 @@ export default function QuizConfigStep({
       return data.text;
     } catch (error) {
       console.error("PDF fetch/extraction error:", error);
-
-      // Provide more specific error messages
-      if (
-        error instanceof TypeError &&
-        error.message.includes("Failed to fetch")
-      ) {
-        throw new Error(
-          "Unable to access PDF due to CORS restrictions. Please upload the PDF file directly instead of using a URL."
-        );
-      } else if (error.message.includes("HTTP 400")) {
-        throw new Error(
-          "PDF URL is invalid or the file is not accessible. Please check the URL or try uploading the file directly."
-        );
-      } else if (error.message.includes("HTTP 403")) {
-        throw new Error(
-          "Access denied to the PDF file. Please check permissions or upload the file directly."
-        );
-      } else if (error.message.includes("HTTP 404")) {
-        throw new Error(
-          "PDF file not found at the provided URL. Please verify the URL is correct."
-        );
-      } else {
-        throw new Error(`Failed to process PDF: ${error.message}`);
-      }
     }
   };
 
   // Improved JSON cleaning function
-  const cleanAndParseJSON = (text: string): any => {
+  const cleanAndParseJSON = (text: string | undefined): any => {
     let jsonText = text.trim();
 
     // Remove markdown code blocks
@@ -239,6 +214,46 @@ export default function QuizConfigStep({
       }
     }
   };
+
+  // Add this useEffect to auto-populate title and course when pdfFile/pdfUrl changes
+  // Update the useEffect for auto-populating
+  useEffect(() => {
+    const extractTitleFromPdf = () => {
+      let title = "";
+      let course = "";
+
+      if (pdfFile) {
+        const fileName = pdfFile.name.replace(/\.pdf$/i, "");
+        title = fileName
+          .split(/[_\-\s]+/)
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+
+        const words = fileName.split(/[_\-\s]+/);
+        course = words.length > 1 ? words.slice(0, 2).join(" ") : words[0];
+      } else if (pdfUrl) {
+        const urlParts = pdfUrl.split("/");
+        const lastPart = urlParts[urlParts.length - 1].replace(/\.pdf$/i, "");
+        title = lastPart
+          .split(/[_\-\s]+/)
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+
+        const words = lastPart.split(/[_\-\s]+/);
+        course = words.length > 1 ? words[0] : "General";
+      }
+
+      setQuizConfig((prev) => ({
+        ...prev,
+        title: title || "PDF Quiz",
+        course: course || "General", // Directly set course name
+      }));
+    };
+
+    if (pdfFile || pdfUrl) {
+      extractTitleFromPdf();
+    }
+  }, [pdfFile, pdfUrl]);
 
   // Generate questions using Gemini AI
   const MAX_RETRIES = 3;
@@ -289,9 +304,13 @@ export default function QuizConfigStep({
         })
         .join(", ");
 
-      const prompt = `You are an expert quiz generator. Analyze the following document text and create ${quizConfig.questionCount} questions based on these requirements:
+      // In the generateQuestionsWithAI function
+      const prompt = `You are an expert quiz generator. Analyze the following document titled "${quizConfig.title}" and create ${quizConfig.questionCount} questions based on these requirements:
+- Course: ${ quizConfig.course || "General"}
 - Difficulty: ${quizConfig.difficultyLevel}
 - Question types: ${questionTypesText}
+
+// ... rest of the prompt
 
 CRITICAL FORMATTING REQUIREMENTS:
 1. Return ONLY a valid JSON array - no explanatory text before or after
@@ -317,7 +336,7 @@ ${pdfText}
 
 Generate the JSON array now:`;
 
-      let lastError: Error | null = null;
+      let lastError: any
 
       for (
         let modelIndex = 0;
@@ -472,7 +491,7 @@ Generate the JSON array now:`;
     // Validate configuration
     if (
       !quizConfig.title ||
-      !quizConfig.courseId ||
+      !quizConfig.course ||
       quizConfig.questionCount < 1 ||
       quizConfig.questionCount > 50 ||
       quizConfig.questionTypes.length === 0
@@ -493,7 +512,7 @@ Generate the JSON array now:`;
     if (questions.length > 0) {
       onQuizGenerated({
         title: quizConfig.title,
-        courseId: quizConfig.courseId,
+        courseId: quizConfig.course,
         questions: questions,
       });
     }
@@ -552,24 +571,17 @@ Generate the JSON array now:`;
             required
             isDisabled={isProcessing}
           />
-
-          <Select
+          {/* // In the form section of QuizConfigStep.tsx */}
+          <Input
             label="Course"
-            placeholder="Select course"
-            selectedKeys={quizConfig.courseId ? [quizConfig.courseId] : []}
-            onSelectionChange={(keys) => {
-              const selectedKey = Array.from(keys)[0] as string;
-              setQuizConfig({ ...quizConfig, courseId: selectedKey || "" });
-            }}
+            placeholder="Enter course name"
+            value={quizConfig.course}
+            onChange={(e) =>
+              setQuizConfig({ ...quizConfig, course: e.target.value })
+            }
             required
             isDisabled={isProcessing}
-          >
-            {availableCourses.map((course) => (
-              <SelectItem key={course.id} value={course.id}>
-                {course.name}
-              </SelectItem>
-            ))}
-          </Select>
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -722,7 +734,7 @@ Generate the JSON array now:`;
             size="lg"
             isDisabled={
               !quizConfig.title ||
-              !quizConfig.courseId ||
+              !quizConfig.course ||
               quizConfig.questionCount < 1 ||
               quizConfig.questionTypes.length === 0 ||
               isProcessing ||

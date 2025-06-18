@@ -613,7 +613,7 @@ const Overview = ({
         <StudyMaterialSection
           title="Recent Quizzes"
           icon={<FileText className="text-blue-500" size={18} />}
-          materials={quizzes.slice(0, 2)}
+          materials={quizzes.slice(0, 3)}
           courseKey="course"
           onViewAll={() => setActiveTab("quizzes")}
         />

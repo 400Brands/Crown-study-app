@@ -6,7 +6,6 @@ import {
   Calendar,
   Edit3,
   User,
-  UploadCloud,
   Settings,
   HelpCircle,
   Bolt,
@@ -14,6 +13,7 @@ import {
   ChevronRight,
   Dot,
   LucideIcon,
+  Target,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -49,11 +49,7 @@ const navigationItems: NavGroup[] = [
         name: "My Courses",
         icon: Layers,
         path: "/dashboard/courses",
-        subItems: [
-          { name: "Quizzes", path: "/dashboard/courses/quizzes" },
-          { name: "Flashcards", path: "/dashboard/courses/flashcards" },
-          { name: "Past Questions", path: "/dashboard/courses/past-questions" },
-        ],
+        
       },
       {
         name: "Study Library",
@@ -79,9 +75,9 @@ const navigationItems: NavGroup[] = [
         notifications: 12,
       },
       {
-        name: "Upload Center",
-        icon: UploadCloud,
-        path: "/dashboard/upload",
+        name: "Opportunites Hub",
+        icon: Target,
+        path: "/dashboard/opportunities",
         highlight: true,
       },
     ],

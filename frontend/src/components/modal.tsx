@@ -6,6 +6,7 @@ import {
   Button,
   useDisclosure,
   Avatar,
+  Badge,
 } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { Auth } from "@supabase/auth-ui-react";
@@ -25,13 +26,10 @@ interface GetStartedProps {
 export default function GetStarted({ size }: GetStartedProps) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
-  const location = useLocation(); // Add location hook to check current route
-
-  const handleOpen = () => {
-    onOpen();
-  };
+  const location = useLocation();
 
   const [session, setSession] = useState<Session | null>(null);
+  const [userPoints, setUserPoints] = useState<number>(1250); // Mocked value for now
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -66,20 +64,30 @@ export default function GetStarted({ size }: GetStartedProps) {
     }
   };
 
-  // Check if current route is /dashboard
   const isDashboardRoute = location.pathname === "/";
 
-  // If on dashboard route and user is logged in, show avatar
   if (!isDashboardRoute && session) {
     return (
-      <Avatar
-        isBordered
-        color="success"
-        src={session.user?.user_metadata?.avatar_url}
-        name={session.user?.user_metadata?.full_name || session.user?.email}
-        size={size}
-        showFallback
-      />
+      <div className="flex  items-center gap-3 p-2 bg-white rounded-lg  ">
+        {/* Avatar */}
+
+        {/* Points Info */}
+        <div className="flex flex-col text-sm">
+          <span className="text-gray-500">
+            Points: <span className="font-bold text-primary">{userPoints}</span>
+          </span>
+          
+        </div>
+
+        <Avatar
+          isBordered
+          color="success"
+          src={session.user?.user_metadata?.avatar_url}
+          name={session.user?.user_metadata?.full_name || session.user?.email}
+          size={size}
+          showFallback
+        />
+      </div>
     );
   }
 
@@ -104,6 +112,7 @@ export default function GetStarted({ size }: GetStartedProps) {
           </Button>
         )}
       </div>
+
       <Modal isOpen={isOpen} size="lg" onClose={onClose}>
         <ModalContent>
           <>
@@ -115,3 +124,4 @@ export default function GetStarted({ size }: GetStartedProps) {
     </>
   );
 }
+

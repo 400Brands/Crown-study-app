@@ -41,10 +41,7 @@ const CourseQuizzes = () => {
   const itemsPerPage = 6;
 
   const availableCourses: Course[] = [
-    { id: "CSC101", name: "CSC 101: Introduction to Programming" },
-    { id: "CSC201", name: "CSC 201: Data Structures & Algorithms" },
-    { id: "CSC301", name: "CSC 301: Database Systems" },
-    { id: "CSC305", name: "CSC 305: Artificial Intelligence" },
+   
   ];
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -91,10 +88,7 @@ const CourseQuizzes = () => {
     questions: Question[];
   }) => {
     try {
-      const courseName =
-        availableCourses
-          .find((c) => c.id === newQuiz.courseId)
-          ?.name.split(":")[0] || "";
+      const courseName = newQuiz.courseId || "General";
 
       // Get current user
       const {
@@ -228,7 +222,11 @@ const CourseQuizzes = () => {
               >
                 <CardBody className="p-6">
                   <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-bold text-lg">{quiz.title}</h3>
+                    <h3 className="font-bold text-lg" title={quiz.title}>
+                      {quiz.title.length > 10
+                        ? `${quiz.title.substring(0, 15)}...`
+                        : quiz.title}
+                    </h3>
                     <Chip
                       size="sm"
                       variant="flat"

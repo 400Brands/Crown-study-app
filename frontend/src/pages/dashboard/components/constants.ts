@@ -50,11 +50,7 @@ export const educationalLevels = [
   { label: "Postgraduate", value: "postgraduate" },
 ];
 
-// Common gender options
-export const genderOptions = [
-  { label: "Male", value: "male" },
-  { label: "Female", value: "female" },
-];
+
 
 // Common Nigerian university departments
 export const commonDepartments = [

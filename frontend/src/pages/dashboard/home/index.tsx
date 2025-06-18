@@ -1,4 +1,3 @@
-//@ts-nocheck
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/supabaseClient";
@@ -26,20 +25,7 @@ import {
 import { ProfileData } from "@/types";
 import DefaultLayout from "@/layouts/default";
 import DashboardLayout from "@/layouts/dashboardLayout";
-
-interface UserStats {
-  totalScore: number;
-  currentStreak: number;
-  maxStreak: number;
-  accuracy: number;
-  totalAnswers: number;
-  correctAnswers: number;
-  dataRewards: number;
-  sessionScore: number;
-  tasksCompleted: number;
-  leaderboardPosition: number;
-  departmentRank: number;
-}
+import { useGameContext } from "../context/GameProvider";
 
 interface LeaderboardUser {
   id: string;
@@ -67,167 +53,81 @@ interface RewardsData {
 }
 
 const DashboardPage: React.FC = () => {
+  // Use GameContext for all game-related data
+  const {
+    score,
+    streak,
+    maxStreak,
+    accuracy,
+    totalAnswered,
+    sessionStats,
+    userId,
+    isInitialized,
+    error: gameError,
+  } = useGameContext();
+
+  // Local state for additional dashboard data
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<UserStats>({
-    totalScore: 0,
-    currentStreak: 0,
-    maxStreak: 0,
-    accuracy: 0,
-    totalAnswers: 0,
-    correctAnswers: 0,
-    dataRewards: 0,
-    sessionScore: 0,
-    tasksCompleted: 0,
-    leaderboardPosition: 0,
-    departmentRank: 0,
-  });
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
   const [departmentLeaderboard, setDepartmentLeaderboard] = useState<
     LeaderboardUser[]
   >([]);
   const [activityData, setActivityData] = useState<ActivityData[]>([]);
   const [studyProgress, setStudyProgress] = useState<StudyProgress[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const [leaderboardPosition, setLeaderboardPosition] = useState<number>(999);
+  const [departmentRank, setDepartmentRank] = useState<number>(999);
 
+  // Calculate rewards data from context
   const rewardsData: RewardsData[] = [
     {
       name: "Data",
-      value: Math.round(stats.dataRewards * 10),
+      value: Math.round(sessionStats.dataRewards * 10),
       color: "#3B82F6",
     },
     {
       name: "Streak Bonus",
-      value: Math.round(stats.currentStreak * 2),
+      value: Math.round(streak * 2),
       color: "#10B981",
     },
     {
       name: "Leaderboard",
-      value: Math.max(0, 100 - stats.leaderboardPosition),
+      value: Math.max(0, 100 - leaderboardPosition),
       color: "#F59E0B",
     },
     {
       name: "Accuracy",
-      value: Math.round(stats.accuracy / 2),
+      value: Math.round(accuracy / 2),
       color: "#EC4899",
     },
   ];
 
-  // Initialize user session and load stats (similar to GameMode)
+  // Initialize dashboard data when GameContext is ready
   useEffect(() => {
-    const initializeSession = async () => {
+    const initializeDashboard = async () => {
+      if (!isInitialized || !userId) return;
+
       try {
         setLoading(true);
-        const {
-          data: { session },
-          error: authError,
-        } = await supabase.auth.getSession();
-
-        if (authError) {
-          console.error("Error getting session:", authError);
-          setError("Authentication error");
-          setIsInitialized(true);
-          return;
-        }
-
-        if (!session?.user) {
-          window.location.href = "/auth/login";
-          return;
-        }
-
-        const currentUserId = session.user.id;
-        setUserId(currentUserId);
-
-        // Load all user data
         await Promise.all([
-          loadUserStats(currentUserId),
-          fetchProfile(currentUserId),
-          fetchActivityData(currentUserId),
-          fetchLeaderboards(currentUserId),
-          fetchStudyProgress(currentUserId),
+          fetchProfile(userId),
+          fetchActivityData(userId),
+          fetchLeaderboards(userId),
+          fetchStudyProgress(userId),
         ]);
       } catch (error) {
-        console.error("Initialization error:", error);
+        console.error("Dashboard initialization error:", error);
         setError(
           error instanceof Error ? error.message : "Failed to load dashboard"
         );
       } finally {
         setLoading(false);
-        setIsInitialized(true);
       }
     };
 
-    initializeSession();
-  }, []);
-
-  // Load user stats from Supabase (similar to GameMode approach)
-  const loadUserStats = async (userId: string) => {
-    try {
-      // Get user's overall stats
-      const { data: userStats, error: userError } = await supabase
-        .from("user_stats")
-        .select("*")
-        .eq("user_id", userId)
-        .single();
-
-      if (userError && userError.code !== "PGRST116") {
-        console.error("Error loading user stats:", userError);
-        return;
-      }
-
-      // Get user's recent active session data
-      const { data: recentSession, error: sessionError } = await supabase
-        .from("game_sessions")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (sessionError && sessionError.code !== "PGRST116") {
-        console.error("Error loading recent session:", sessionError);
-      }
-
-      // Get leaderboard position
-      const { data: leaderboardData, error: leaderboardError } =
-        await supabase.rpc("get_user_leaderboard_position", {
-          p_user_id: userId,
-        });
-
-      // Set stats from backend or defaults
-      const totalScore = userStats?.total_score || 0;
-      const totalAnswers = userStats?.total_answers || 0;
-      const correctAnswers = userStats?.correct_answers || 0;
-      const maxStreak = userStats?.max_streak || 0;
-      const currentStreak = recentSession?.current_streak || 0;
-      const sessionScore = recentSession?.score || 0;
-      const tasksCompleted = recentSession?.tasks_completed || 0;
-      const dataRewards =
-        recentSession?.data_rewards || userStats?.data_rewards || 0;
-
-      setStats({
-        totalScore,
-        currentStreak,
-        maxStreak,
-        accuracy:
-          totalAnswers > 0
-            ? Math.round((correctAnswers / totalAnswers) * 100)
-            : 0,
-        totalAnswers,
-        correctAnswers,
-        dataRewards,
-        sessionScore,
-        tasksCompleted,
-        leaderboardPosition: leaderboardData?.[0]?.position || 999,
-        departmentRank: leaderboardData?.[0]?.department_rank || 999,
-      });
-    } catch (error) {
-      console.error("Error loading user stats:", error);
-    }
-  };
+    initializeDashboard();
+  }, [isInitialized, userId]);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -276,13 +176,17 @@ const DashboardPage: React.FC = () => {
 
   const fetchLeaderboards = async (userId: string) => {
     try {
-      const [globalResult, deptResult] = await Promise.allSettled([
-        supabase.rpc("get_global_leaderboard", { p_limit: 10 }),
-        supabase.rpc("get_department_leaderboard", {
-          p_user_id: userId,
-          p_limit: 5,
-        }),
-      ]);
+      const [globalResult, deptResult, positionResult] =
+        await Promise.allSettled([
+          supabase.rpc("get_global_leaderboard", { p_limit: 10 }),
+          supabase.rpc("get_department_leaderboard", {
+            p_user_id: userId,
+            p_limit: 5,
+          }),
+          supabase.rpc("get_user_leaderboard_position", {
+            p_user_id: userId,
+          }),
+        ]);
 
       if (globalResult.status === "fulfilled" && !globalResult.value.error) {
         setLeaderboard(globalResult.value.data || []);
@@ -291,6 +195,15 @@ const DashboardPage: React.FC = () => {
       if (deptResult.status === "fulfilled" && !deptResult.value.error) {
         setDepartmentLeaderboard(deptResult.value.data || []);
       }
+
+      if (
+        positionResult.status === "fulfilled" &&
+        !positionResult.value.error
+      ) {
+        const positionData = positionResult.value.data?.[0];
+        setLeaderboardPosition(positionData?.position || 999);
+        setDepartmentRank(positionData?.department_rank || 999);
+      }
     } catch (error) {
       console.error("Leaderboard fetch error:", error);
     }
@@ -298,13 +211,13 @@ const DashboardPage: React.FC = () => {
 
   const fetchStudyProgress = async (userId: string) => {
     try {
-      const { data: progressData, error: progressError } = await supabase.rpc(
+      const { data: progressData } = await supabase.rpc(
         "get_study_progress",
         { p_user_id: userId }
       );
 
-      if (progressError) {
-        // Fallback data
+      if (progressData) {
+        // Fallback data using context data
         setStudyProgress([
           {
             name: `${profile?.department || "Computer Science"} Core`,
@@ -312,8 +225,8 @@ const DashboardPage: React.FC = () => {
           },
           { name: "General Studies", progress: 42 },
           {
-            name: "TII Labeling Tasks",
-            progress: Math.min(100, stats.accuracy),
+            name: "Mind Games",
+            progress: Math.min(100, accuracy),
           },
         ]);
         return;
@@ -325,12 +238,17 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  // Calculate time active (mock implementation)
+  // Calculate time active from session stats
   const getTimeActive = () => {
-    // This would be calculated from session data in a real implementation
-    return `${Math.floor(stats.tasksCompleted * 1.5)} mins`;
+    if (sessionStats.startTime) {
+      const timeDiff = Date.now() - sessionStats.startTime.getTime();
+      const minutes = Math.floor(timeDiff / (1000 * 60));
+      return `${minutes} mins`;
+    }
+    return `${Math.floor(sessionStats.tasksCompleted * 1.5)} mins`;
   };
 
+  // Handle loading states
   if (!isInitialized || loading) {
     return (
       <DefaultLayout>
@@ -346,7 +264,8 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  if (error) {
+  // Handle error states
+  if (error || gameError) {
     return (
       <DefaultLayout>
         <DashboardLayout>
@@ -367,7 +286,7 @@ const DashboardPage: React.FC = () => {
                   />
                 </svg>
               </div>
-              <p className="text-red-600 mb-4">{error}</p>
+              <p className="text-red-600 mb-4">{error || gameError}</p>
               <Button color="primary" onClick={() => window.location.reload()}>
                 Retry
               </Button>
@@ -382,20 +301,22 @@ const DashboardPage: React.FC = () => {
     <DefaultLayout>
       <DashboardLayout>
         <div className="space-y-6 ml-4">
-          {/* Main Stats Cards - Similar to Game Stats */}
+          {/* Main Stats Cards - Using GameContext data */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Score Card */}
             <Card className="border border-blue-200 bg-blue-50">
               <CardBody className="p-4">
-                <h3 className="text-sm font-medium text-blue-800">Score</h3>
-                <p className="text-2xl font-bold">{stats.totalScore}</p>
+                <h3 className="text-sm font-medium text-blue-800">
+                  Total Score
+                </h3>
+                <p className="text-2xl font-bold">{score}</p>
                 <Progress
-                  value={Math.min(100, (stats.totalScore / 1000) * 100)}
+                  value={Math.min(100, (score / 1000) * 100)}
                   className="mt-2"
                   color="primary"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {Math.max(0, 1000 - stats.totalScore)} to next milestone
+                  {Math.max(0, 1000 - score)} to next milestone
                 </p>
               </CardBody>
             </Card>
@@ -403,14 +324,18 @@ const DashboardPage: React.FC = () => {
             {/* Current Streak Card */}
             <Card className="border border-green-200 bg-green-50">
               <CardBody className="p-4">
-                <h3 className="text-sm font-medium text-green-800">Streak</h3>
-                <p className="text-2xl font-bold">{stats.currentStreak}</p>
+                <h3 className="text-sm font-medium text-green-800">
+                  Current Streak
+                </h3>
+                <p className="text-2xl font-bold">{streak}</p>
                 <Progress
-                  value={Math.min(100, (stats.currentStreak / 10) * 100)}
+                  value={Math.min(100, (streak / 10) * 100)}
                   className="mt-2"
                   color="success"
                 />
-                <p className="text-xs text-gray-500 mt-1">Current streak</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Session: {sessionStats.tasksCompleted} tasks
+                </p>
               </CardBody>
             </Card>
 
@@ -420,12 +345,8 @@ const DashboardPage: React.FC = () => {
                 <h3 className="text-sm font-medium text-purple-800">
                   Accuracy
                 </h3>
-                <p className="text-2xl font-bold">{stats.accuracy}%</p>
-                <Progress
-                  value={stats.accuracy}
-                  className="mt-2"
-                  color="secondary"
-                />
+                <p className="text-2xl font-bold">{accuracy}%</p>
+                <Progress value={accuracy} className="mt-2" color="secondary" />
                 <p className="text-xs text-gray-500 mt-1">{getTimeActive()}</p>
               </CardBody>
             </Card>
@@ -436,14 +357,14 @@ const DashboardPage: React.FC = () => {
                 <h3 className="text-sm font-medium text-orange-800">
                   Max Streak
                 </h3>
-                <p className="text-2xl font-bold">{stats.maxStreak}</p>
+                <p className="text-2xl font-bold">{maxStreak}</p>
                 <Progress
-                  value={Math.min(100, (stats.maxStreak / 20) * 100)}
+                  value={Math.min(100, (maxStreak / 20) * 100)}
                   className="mt-2"
                   color="warning"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {stats.totalAnswers} questions answered
+                  {totalAnswered} questions answered
                 </p>
               </CardBody>
             </Card>
@@ -511,17 +432,25 @@ const DashboardPage: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm">Total Points:</span>
-                    <span className="font-medium">{stats.totalScore}</span>
+                    <span className="font-medium">{score}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Data Rewards:</span>
                     <span className="font-medium">
-                      {stats.dataRewards.toFixed(1)} GB
+                      {sessionStats.dataRewards.toFixed(1)} GB
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm">Tasks Completed:</span>
-                    <span className="font-medium">{stats.tasksCompleted}</span>
+                    <span className="font-medium">
+                      {sessionStats.tasksCompleted}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Session Score:</span>
+                    <span className="font-medium">
+                      {sessionStats.sessionScore}
+                    </span>
                   </div>
                   <Button
                     color="primary"
@@ -529,6 +458,7 @@ const DashboardPage: React.FC = () => {
                     className="w-full mt-4"
                     onClick={() => {
                       // Handle reward claiming
+                      console.log("Claiming rewards...");
                     }}
                   >
                     Claim Rewards
@@ -538,20 +468,27 @@ const DashboardPage: React.FC = () => {
             </Card>
           </div>
 
-          {/* Additional sections can be added here for leaderboards, study progress, etc. */}
+          {/* Leaderboards */}
           {leaderboard.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Global Leaderboard */}
               <Card>
                 <CardBody>
-                  <h3 className="font-semibold text-lg mb-4">
-                    Global Leaderboard
-                  </h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold text-lg">
+                      Global Leaderboard
+                    </h3>
+                    <span className="text-sm text-gray-500">
+                      Your rank: #{leaderboardPosition}
+                    </span>
+                  </div>
                   <div className="space-y-3">
                     {leaderboard.slice(0, 5).map((user, index) => (
                       <div
                         key={user.id}
-                        className="flex items-center justify-between p-2 rounded-lg bg-gray-50"
+                        className={`flex items-center justify-between p-2 rounded-lg ${
+                          user.id === userId ? "bg-blue-100" : "bg-gray-50"
+                        }`}
                       >
                         <div className="flex items-center space-x-3">
                           <span className="text-sm font-medium w-6">
@@ -559,7 +496,9 @@ const DashboardPage: React.FC = () => {
                           </span>
                           <Avatar size="sm" src={user.avatar} />
                           <div>
-                            <p className="text-sm font-medium">{user.name}</p>
+                            <p className="text-sm font-medium">
+                              {user.id === userId ? "You" : user.name}
+                            </p>
                             <p className="text-xs text-gray-500">
                               {user.department}
                             </p>
@@ -577,14 +516,21 @@ const DashboardPage: React.FC = () => {
               {/* Department Leaderboard */}
               <Card>
                 <CardBody>
-                  <h3 className="font-semibold text-lg mb-4">
-                    Department Ranking
-                  </h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold text-lg">
+                      Department Ranking
+                    </h3>
+                    <span className="text-sm text-gray-500">
+                      Dept rank: #{departmentRank}
+                    </span>
+                  </div>
                   <div className="space-y-3">
                     {departmentLeaderboard.slice(0, 5).map((user, index) => (
                       <div
                         key={user.id}
-                        className="flex items-center justify-between p-2 rounded-lg bg-gray-50"
+                        className={`flex items-center justify-between p-2 rounded-lg ${
+                          user.id === userId ? "bg-green-100" : "bg-gray-50"
+                        }`}
                       >
                         <div className="flex items-center space-x-3">
                           <span className="text-sm font-medium w-6">
@@ -592,7 +538,9 @@ const DashboardPage: React.FC = () => {
                           </span>
                           <Avatar size="sm" src={user.avatar} />
                           <div>
-                            <p className="text-sm font-medium">{user.name}</p>
+                            <p className="text-sm font-medium">
+                              {user.id === userId ? "You" : user.name}
+                            </p>
                             <p className="text-xs text-gray-500">
                               {user.department}
                             </p>
@@ -607,6 +555,37 @@ const DashboardPage: React.FC = () => {
                 </CardBody>
               </Card>
             </div>
+          )}
+
+          {/* Study Progress */}
+          {studyProgress.length > 0 && (
+            <Card>
+              <CardBody>
+                <h3 className="font-semibold text-lg mb-4">Study Progress</h3>
+                <div className="space-y-4">
+                  {studyProgress.map((item, index) => (
+                    <div key={index}>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-sm font-medium">{item.name}</span>
+                        <span className="text-sm text-gray-500">
+                          {item.progress}%
+                        </span>
+                      </div>
+                      <Progress
+                        value={item.progress}
+                        color={
+                          item.progress >= 80
+                            ? "success"
+                            : item.progress >= 50
+                              ? "warning"
+                              : "danger"
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
           )}
         </div>
       </DashboardLayout>

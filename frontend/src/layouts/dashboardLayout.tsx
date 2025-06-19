@@ -3,7 +3,6 @@ import {
   Home,
   Layers,
   Library,
-  Calendar,
   Edit3,
   User,
   Settings,

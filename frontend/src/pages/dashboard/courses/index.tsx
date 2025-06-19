@@ -17,42 +17,28 @@ const MyCourses = () => {
   const courses = [
     {
       id: 1,
-      title: "Introduction to Computer Science",
-      code: "CSC 101",
-      progress: 78,
-      instructor: "Dr. Adebayo",
-      nextSession: "Mon, 10:00 AM",
-      assignmentsDue: 2,
-      resources: 15,
+      title: "Imagination is more important than knowledge. - Albert Einstein",
+      
       color: "bg-blue-500",
       thumbnail:
-        "https://res.cloudinary.com/dgbreoalg/image/upload/v1748253398/360_F_239753981_Z0AGbK5i7v4aIVm1Of8trUYYTWgoQnuq-ezgif.com-webp-to-jpg-converter_abrzyb.jpg",
+        "https://imgs.search.brave.com/XpBNMOML5vHo435XvKl7TySns3Z-zQ3JEmvAo0DbmI8/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9yZW5k/ZXIuZmluZWFydGFt/ZXJpY2EuY29tL2lt/YWdlcy9yZW5kZXJl/ZC9zZWFyY2gvcHJp/bnQvNi41LzgvYnJl/YWsvaW1hZ2VzL2Fy/dHdvcmtpbWFnZXMv/bWVkaXVtLzIvYWxi/ZXJ0LWVpbnN0ZWlu/LXNtb2tpbmctYS1w/aXBlLWJldHRtYW5u/LmpwZw",
     },
     {
       id: 2,
-      title: "Data Structures and Algorithms",
-      code: "CSC 201",
-      progress: 45,
-      instructor: "Prof. Chukwu",
-      nextSession: "Wed, 2:00 PM",
-      assignmentsDue: 3,
-      resources: 22,
+      title:
+        "When something is important enough, you do it even if the odds are not in your favor - Elon Musk",
+      
       color: "bg-purple-500",
       thumbnail:
-        "https://res.cloudinary.com/dgbreoalg/image/upload/v1748253398/360_F_239753981_Z0AGbK5i7v4aIVm1Of8trUYYTWgoQnuq-ezgif.com-webp-to-jpg-converter_abrzyb.jpg",
+        "https://imgs.search.brave.com/hCJenTbgMFuYzM0YXaltkfB5xUMf6fX0_DroEYn4xkY/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4u/YnJpdGFubmljYS5j/b20vMDUvMjM2NTA1/LTA1MC0xN0I2RTM0/QS9FbG9uLU11c2st/MjAyMi5qcGc_dz0z/ODU",
     },
     {
       id: 3,
-      title: "Data Structures and Algorithms",
-      code: "CSC 201",
-      progress: 45,
-      instructor: "Prof. Chukwu",
-      nextSession: "Wed, 2:00 PM",
-      assignmentsDue: 3,
-      resources: 22,
+      title: "Don’t wait for permission to build the future. - Iyinoluwa A",
+      
       color: "bg-purple-500",
       thumbnail:
-        "https://res.cloudinary.com/dgbreoalg/image/upload/v1748253398/360_F_239753981_Z0AGbK5i7v4aIVm1Of8trUYYTWgoQnuq-ezgif.com-webp-to-jpg-converter_abrzyb.jpg",
+        "https://imgs.search.brave.com/1lCXzzMITqwXM1JlGA2LfOGx_QZTjkIPKuH87lkSvLA/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9naXN0/ZmxhcmUuY29tLm5n/L3dwLWNvbnRlbnQv/dXBsb2Fkcy8yMDIy/LzA0L0l5aW5vbHV3/YS1BYm95ZWppLmpw/Zw",
     },
   ];
 

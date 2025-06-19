@@ -57,12 +57,7 @@ const navigationItems: NavGroup[] = [
         path: "/dashboard/library",
         notifications: 8,
       },
-      {
-        name: "Study Planner",
-        icon: Calendar,
-        path: "/dashboard/planner",
-        dotIndicator: true,
-      },
+      
     ],
   },
   {

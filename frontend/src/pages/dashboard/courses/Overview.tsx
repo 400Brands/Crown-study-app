@@ -124,9 +124,11 @@ const StudyMaterialSection = ({
 
                 <div className="p-4">
                   <div className="flex justify-between items-start">
-                    <h4 className="font-medium">{material.title}</h4>
+                    <h4 className="font-medium">
+                      {material.title.slice(0, 12)}
+                    </h4>
                     <Chip size="sm" variant="flat">
-                      {material[courseKey] as string}
+                      {material[courseKey].slice(0, 12) as string}
                     </Chip>
                   </div>
 
@@ -467,18 +469,19 @@ const Overview = ({
   return (
     <>
       {/* Courses Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
+      <div className="hidden lg:grid grid-cols-3 gap-6">
+        {" "}
         {courses.map((course) => (
           <Card
             key={course.id}
             className="border border-gray-200 hover:shadow-md transition-shadow"
           >
             <CardBody className="p-0 overflow-hidden">
-              <div className="relative">
+              <div className="relative p-2">
                 <img
                   src={course.thumbnail}
                   alt={course.title}
-                  className="w-full object-cover"
+                  className="w-full object-cover h-52"
                 />
                 <div className="absolute top-4 left-4 z-1">
                   <div
@@ -491,64 +494,15 @@ const Overview = ({
               <div className="p-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-bold text-lg">{course.title}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-gray-500 text-sm">
-                        {course.code}
-                      </span>
-                      <Chip size="sm" variant="flat" color="success">
-                        Active
-                      </Chip>
-                    </div>
+                    <p className="italic text-md">{course.title}</p>
+                    
                   </div>
-                  <Badge
-                    content={course.assignmentsDue}
-                    color="danger"
-                    shape="circle"
-                  >
-                    <Button isIconOnly variant="light" radius="full">
-                      <Clock className="text-gray-500" size={16} />
-                    </Button>
-                  </Badge>
+                  
                 </div>
 
-                <div className="my-4">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-500">Progress</span>
-                    <span className="font-medium">{course.progress}%</span>
-                  </div>
-                  <Progress
-                    aria-label="Course progress"
-                    value={course.progress}
-                    classNames={{
-                      base: "h-2",
-                      indicator:
-                        course.color.replace("bg", "bg-gradient-to-r from") +
-                        "-400 to" +
-                        course.color.replace("bg", "-600"),
-                    }}
-                  />
-                </div>
+                
 
-                <Divider className="my-4" />
-
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <Clock size={16} className="text-gray-400" />
-                    <span className="text-sm text-gray-500">
-                      {course.nextSession}
-                    </span>
-                  </div>
-                  <Button
-                    size="sm"
-                    radius="full"
-                    variant="flat"
-                    color="primary"
-                    endContent={<ChevronRight size={16} />}
-                  >
-                    View Details
-                  </Button>
-                </div>
+               
               </div>
             </CardBody>
           </Card>

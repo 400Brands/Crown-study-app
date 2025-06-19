@@ -183,7 +183,7 @@ const GameInterface = ({
                         <Trophy className="w-12 h-12 text-blue-600" />
                       </div>
                     </div>
-                    <h2 className="text-2xl font-bold">Labeling Challenge</h2>
+                    <h2 className="text-2xl font-bold">Mind Challenge</h2>
                     <p className="text-gray-600 max-w-md mx-auto">
                       Answer visual questions correctly to earn points, build
                       streaks, and win data rewards. Each correct answer gives

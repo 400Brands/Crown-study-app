@@ -306,7 +306,7 @@ export default function QuizConfigStep({
 
       // In the generateQuestionsWithAI function
       const prompt = `You are an expert quiz generator. Analyze the following document titled "${quizConfig.title}" and create ${quizConfig.questionCount} questions based on these requirements:
-- Course: ${ quizConfig.course || "General"}
+- Course: ${quizConfig.course || "General"}
 - Difficulty: ${quizConfig.difficultyLevel}
 - Question types: ${questionTypesText}
 
@@ -336,7 +336,7 @@ ${pdfText}
 
 Generate the JSON array now:`;
 
-      let lastError: any
+      let lastError: any;
 
       for (
         let modelIndex = 0;
@@ -585,53 +585,96 @@ Generate the JSON array now:`;
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            type="number"
-            min={1}
-            max={50}
-            label="Number of Questions"
-            placeholder="10"
-            value={quizConfig.questionCount.toString()}
-            onChange={(e) =>
-              setQuizConfig({
-                ...quizConfig,
-                questionCount: Math.min(
-                  50,
-                  Math.max(1, parseInt(e.target.value) || 10)
-                ),
-              })
-            }
-            required
-            isDisabled={isProcessing}
-          />
+          {/* Number of Questions Select - Styled to match */}
+          <div className="flex flex-col bg-gray-100 rounded-lg transition-all duration-200 hover:bg-gray-50 focus-within:bg-gray-50">
+            <label
+              htmlFor="questionCount"
+              className="text-tiny text-gray-700 px-3 pt-2"
+            >
+              Number of Questions
+            </label>
+            <select
+              id="questionCount"
+              value={quizConfig.questionCount}
+              onChange={(e) =>
+                setQuizConfig({
+                  ...quizConfig,
+                  questionCount: parseInt(e.target.value),
+                })
+              }
+              disabled={isProcessing}
+              required
+              className="w-full px-3 pb-2 bg-transparent text-sm text-gray-900 focus:outline-none disabled:opacity-50 appearance-none"
+            >
+              {[...Array(10)].map((_, i) => {
+                const value = (i + 1) * 5;
+                return (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                );
+              })}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
+          </div>
 
-          <Select
-            label="Difficulty Level"
-            placeholder="Select difficulty"
-            selectedKeys={[quizConfig.difficultyLevel]}
-            onSelectionChange={(keys) => {
-              const selectedKey = Array.from(keys)[0] as string;
-              setQuizConfig({
-                ...quizConfig,
-                difficultyLevel: selectedKey as any,
-              });
-            }}
-            required
-            isDisabled={isProcessing}
-          >
-            <SelectItem key="easy" value="easy">
-              Easy
-            </SelectItem>
-            <SelectItem key="medium" value="medium">
-              Medium
-            </SelectItem>
-            <SelectItem key="hard" value="hard">
-              Hard
-            </SelectItem>
-            <SelectItem key="mixed" value="mixed">
-              Mixed Difficulty
-            </SelectItem>
-          </Select>
+          {/* Difficulty Level Select */}
+          <div className="flex flex-col p-1 bg-gray-200 rounded-lg transition-all duration-200 hover:bg-gray-50 focus-within:bg-gray-50">
+            <label
+              htmlFor="difficultyLevel"
+              className="text-tiny text-gray-700 px-3 pt-1"
+            >
+              Difficulty Level
+            </label>
+            <select
+              id="difficultyLevel"
+              value={quizConfig.difficultyLevel}
+              onChange={(e) =>
+                setQuizConfig({
+                  ...quizConfig,
+                  difficultyLevel: e.target.value as any,
+                })
+              }
+              disabled={isProcessing}
+              required
+              className="w-full px-3 pb-2 bg-transparent text-sm text-gray-900 focus:outline-none disabled:opacity-50 appearance-none"
+            >
+              <option value="">Select difficulty</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+              <option value="mixed">Mixed Difficulty</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-3">

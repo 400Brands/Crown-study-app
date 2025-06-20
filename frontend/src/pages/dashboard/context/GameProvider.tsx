@@ -1,6 +1,20 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { Choice, SessionStats, SubmissionResult, Task } from "@/types";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode,
+} from "react";
+import {
+  Choice,
+  SessionStats,
+  SubmissionResult,
+  Task,
+  ProfileData,
+} from "@/types";
 import { supabase } from "@/supabaseClient";
+import { Session } from "@supabase/supabase-js";
 
 const API_BASE_URL: string = "https://crowdlabel.tii.ae/api/2025.2";
 const API_KEY = "jAG4usG-LvMn2JyBSgWCIN9YIKbKAEMJ";
@@ -23,17 +37,27 @@ export interface GameContextType {
   showResult: boolean;
   isCorrect: boolean | "" | undefined;
   sessionStats: SessionStats;
-  
+
+  //
+  session: Session | null | undefined;
+
+  // Profile-based state
+  userProfile: ProfileData | null;
+  profileLoading: boolean;
+  profileError: string | null;
+  complexity: number;
+
   // Supabase state
   sessionId: string | null;
   userId: string | null;
   isInitialized: boolean;
-  
+
   // Actions
   startGame: () => Promise<void>;
   endGame: () => Promise<void>;
   handleChoiceSelect: (choice: Choice) => Promise<void>;
   fetchTask: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   setTimeLeft: React.Dispatch<React.SetStateAction<number>>;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
 }
@@ -45,7 +69,7 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 export const useGameContext = () => {
   const context = useContext(GameContext);
   if (context === undefined) {
-    throw new Error('useGameContext must be used within a GameProvider');
+    throw new Error("useGameContext must be used within a GameProvider");
   }
   return context;
 };
@@ -54,6 +78,21 @@ export const useGameContext = () => {
 interface GameProviderProps {
   children: ReactNode;
 }
+
+// Helper function to calculate complexity based on level
+const calculateComplexity = (level: string | null | undefined): number => {
+  if (!level) return 4; // Default complexity for empty/null level
+
+  const levelNum = parseInt(level, 10);
+  if (isNaN(levelNum)) return 4;
+
+  if (levelNum >= 400) return 4;
+  if (levelNum >= 300) return 3;
+  if (levelNum >= 200) return 2;
+  if (levelNum >= 100) return 1;
+
+  return 4; // Default for any other case
+};
 
 // Game Provider Component
 export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
@@ -79,12 +118,20 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     dataRewards: 0,
   });
 
+  // Profile-based state
+  const [userProfile, setUserProfile] = useState<ProfileData | null>(null);
+  const [profileLoading, setProfileLoading] = useState<boolean>(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [complexity, setComplexity] = useState<number>(4);
+
   // Supabase state
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const [session, setSession] = useState<Session | null>();
+  
 
-  // Initialize user session and load existing stats
+  // Initialize user session and load profile
   useEffect(() => {
     const initializeSession = async () => {
       try {
@@ -93,18 +140,27 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
           error: authError,
         } = await supabase.auth.getSession();
 
+        setSession;(session);
+
         if (authError) {
           console.error("Error getting session:", authError);
+          setError("Authentication error occurred");
           setIsInitialized(true);
           return;
         }
 
         if (session?.user) {
           setUserId(session.user.id);
-          await loadUserStats(session.user.id);
+          await Promise.all([
+            loadUserProfile(session.user.id),
+            loadUserStats(session.user.id),
+          ]);
+        } else {
+          setError("User not authenticated");
         }
       } catch (error) {
         console.error("Initialization error:", error);
+        setError("Failed to initialize session");
       } finally {
         setIsInitialized(true);
       }
@@ -112,6 +168,70 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     initializeSession();
   }, []);
+
+  // Load user profile from Supabase
+  const loadUserProfile = async (userId: string) => {
+    try {
+      setProfileLoading(true);
+      setProfileError(null);
+
+      const { data: userData, error: userError } =
+        await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!userData.user) throw new Error("User not found");
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
+
+      if (profileError) {
+        if (profileError.code === "PGRST116") {
+          // Profile doesn't exist, create a new one
+          const newProfileData: Partial<ProfileData> = {
+            user_id: userId,
+            full_name: userData.user.user_metadata?.full_name || "",
+            email: userData.user.email || "",
+            profile_complete: false,
+          };
+
+          const { data: newProfile, error: insertError } = await supabase
+            .from("profiles")
+            .insert(newProfileData)
+            .select("*")
+            .single();
+
+          if (insertError) throw insertError;
+
+          setUserProfile(newProfile as ProfileData);
+          setComplexity(calculateComplexity(newProfile.level));
+        } else {
+          throw profileError;
+        }
+      } else {
+        setUserProfile(profile as ProfileData);
+        setComplexity(calculateComplexity(profile.level));
+      }
+    } catch (error: any) {
+      console.error("Error loading user profile:", error);
+      setProfileError(error?.message || "Failed to load profile");
+
+      // If it's an auth error, redirect to login
+      if (error?.message?.includes("auth") || error?.message?.includes("JWT")) {
+        window.location.href = "/auth/login?error=session_expired";
+      }
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  // Refresh profile data
+  const refreshProfile = useCallback(async () => {
+    if (userId) {
+      await loadUserProfile(userId);
+    }
+  }, [userId]);
 
   // Load user stats from Supabase
   const loadUserStats = async (userId: string) => {
@@ -163,7 +283,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
         setSessionId(recentSession.id);
         setSessionStats({
           tasksCompleted: recentSession.tasks_completed || 0,
-          sessionScore: recentSession.score + userStats.total_score,
+          sessionScore: recentSession.score + (userStats?.total_score || 0),
           startTime: new Date(recentSession.created_at),
           dataRewards: recentSession.data_rewards || 0,
         });
@@ -181,15 +301,17 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     []
   );
 
-  // Calculate accuracy
+  // Calculate accuracy when stats change
   useEffect(() => {
     setAccuracy(
       totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0
     );
   }, [correctAnswers, totalAnswered]);
 
-  // Fetch a new task from the API
+  // Fetch a new task from the API using profile-based complexity
   const fetchTask = useCallback(async () => {
+    if (!isInitialized) return;
+
     setIsLoading(true);
     setError(null);
     setSelectedChoice(null);
@@ -198,7 +320,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/tasks/pick?lang=en&category=vqa&complexity=2`,
+        `${API_BASE_URL}/tasks/pick?lang=en&category=vqa&complexity=${complexity}`,
         {
           method: "GET",
           headers: getHeaders(),
@@ -206,9 +328,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       );
 
       if (!response.ok) {
-        throw new Error(
-          `API Error: ${response.status} - ${await response.text()}`
-        );
+        const errorText = await response.text();
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
@@ -221,12 +342,19 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       setCurrentTask(taskToSet);
     } catch (err) {
       console.error("Error fetching task:", err);
-      setError(err instanceof Error ? err.message : "Failed to fetch task");
-      setTimeout(() => fetchTask(), 2000); // Retry after 2 seconds
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch task";
+      setError(errorMessage);
+
+      // Retry after 3 seconds with exponential backoff
+      setTimeout(() => {
+        if (!isPlaying) return; // Don't retry if game is stopped
+        fetchTask();
+      }, 3000);
     } finally {
       setIsLoading(false);
     }
-  }, [getHeaders]);
+  }, [getHeaders, complexity, isInitialized, isPlaying]);
 
   // Submit answer to the API
   const submitAnswer = useCallback(
@@ -273,6 +401,11 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       return;
     }
 
+    if (!userProfile) {
+      setError("User profile not loaded");
+      return;
+    }
+
     try {
       const { data: sessionId, error } = await supabase.rpc(
         "start_game_session",
@@ -286,6 +419,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       setSessionId(sessionId);
       setIsPlaying(true);
       setTimeLeft(30);
+      setError(null);
       setSessionStats({
         tasksCompleted: 0,
         sessionScore: 0,
@@ -294,9 +428,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       });
 
       await fetchTask();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error starting game session:", error);
-      setError("Failed to start game session");
+      setError(error?.message || "Failed to start game session");
     }
   };
 
@@ -326,7 +460,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       setTotalAnswered((prev) => prev + 1);
 
       let newStreak = correct ? streak + 1 : 0;
-      const pointsEarned = correct ? 10 * newStreak : 0;
+      const pointsEarned = correct ? 10 * Math.max(1, newStreak) : 0;
 
       if (correct) {
         setCorrectAnswers((prev) => prev + 1);
@@ -378,12 +512,15 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
           }),
         ]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error handling choice:", error);
-      setError("Failed to process answer");
+      setError(error?.message || "Failed to process answer");
     } finally {
       setIsLoading(false);
-      setTimeout(fetchTask, 2000);
+      // Auto-fetch next task after 2 seconds
+      setTimeout(() => {
+        if (isPlaying) fetchTask();
+      }, 2000);
     }
   };
 
@@ -411,6 +548,10 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
     setIsPlaying(false);
     setSessionId(null);
+    setCurrentTask(null);
+    setSelectedChoice(null);
+    setShowResult(false);
+    setIsCorrect(false);
   };
 
   const contextValue: GameContextType = {
@@ -430,24 +571,32 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     showResult,
     isCorrect,
     sessionStats,
-    
+
+    //
+    session,
+
+    // Profile-based state
+    userProfile,
+    profileLoading,
+    profileError,
+    complexity,
+
     // Supabase state
     sessionId,
     userId,
     isInitialized,
-    
+
     // Actions
     startGame,
     endGame,
     handleChoiceSelect,
     fetchTask,
+    refreshProfile,
     setTimeLeft,
     setError,
   };
 
   return (
-    <GameContext.Provider value={contextValue}>
-      {children}
-    </GameContext.Provider>
+    <GameContext.Provider value={contextValue}>{children}</GameContext.Provider>
   );
 };

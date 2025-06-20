@@ -1,5 +1,3 @@
-//@ts-nocheck
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/supabaseClient";
 import { Button, Card, CardBody, Chip, Divider, Avatar } from "@heroui/react";
@@ -7,95 +5,41 @@ import { ProfileData } from "@/types";
 import DefaultLayout from "@/layouts/default";
 import DashboardLayout from "@/layouts/dashboardLayout";
 import ProfileEditorModal from "../components/ProfileModal";
+import { useGameContext } from "../context/GameProvider";
 
 const ProfileComponent = () => {
-  const [profile, setProfile] = useState<ProfileData>({
-    user_id: "",
-    full_name: "",
-    email: "",
-    profile_complete: false,
-  });
-  const [loading, setLoading] = useState(true);
+  const {
+    userProfile: profile,
+    profileLoading: loading,
+    profileError,
+    complexity, userProfile,
+    session,
+    refreshProfile,
+    isInitialized,
+    userId,
+  } = useGameContext();
+
   const [uploading, setUploading] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
-    try {
-      setLoading(true);
-      const { data: session, error: sessionError } =
-        await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-      if (!session.session) {
-        window.location.href = "/auth/login";
-        return;
-      }
-
-      const { data: userData, error: userError } =
-        await supabase.auth.getUser();
-      if (userError) throw userError;
-      if (!userData.user) {
-        window.location.href = "/auth/login";
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", userData.user.id)
-        .single();
-
-      if (error) {
-        if (error.code === "PGRST116") {
-          const newProfileData = {
-            user_id: userData.user.id,
-            full_name: userData.user.user_metadata?.full_name || "",
-            email: userData.user.email,
-            profile_complete: false,
-          };
-
-          const { error: insertError } = await supabase
-            .from("profiles")
-            .insert(newProfileData);
-
-          if (insertError) throw insertError;
-
-          const { data: newProfile, error: fetchError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("user_id", userData.user.id)
-            .single();
-
-          if (fetchError) throw fetchError;
-          setProfile(newProfile as ProfileData);
-        } else {
-          throw error;
-        }
-      } else {
-        setProfile(data as ProfileData);
-      }
-    } catch (error: any) {
-      console.error("Error fetching profile:", error);
-      if (error?.message?.includes("auth") || error.message?.includes("JWT")) {
-        window.location.href = "/auth/login?error=session_expired";
-      }
-    } finally {
-      setLoading(false);
+    if (isInitialized && !userId) {
+      window.location.href = "/auth/login";
     }
-  };
+  }, [isInitialized, userId]);
 
   const handleUpdateProfile = async (updates: Partial<ProfileData>) => {
+    if (!userId || !profile) {
+      setUpdateError("User not authenticated or profile not loaded");
+      return;
+    }
+
     try {
       setIsSaving(true);
-      const { data: session } = await supabase.auth.getSession();
-
-      if (!session.session?.user?.id) {
-        throw new Error("Authentication required");
-      }
+      setUpdateError(null);
 
       const updatedProfileData = {
         ...updates,
@@ -106,15 +50,15 @@ const ProfileComponent = () => {
       const { data: existingProfile, error: checkError } = await supabase
         .from("profiles")
         .select("user_id")
-        .eq("user_id", session.session.user.id)
+        .eq("user_id", userId)
         .single();
 
       if (checkError) {
         if (checkError.code === "PGRST116") {
           const newProfileData = {
-            user_id: session.session.user.id,
+            user_id: userId,
             full_name: profile.full_name || "",
-            email: profile.email || session.session.user.email,
+            email: profile.email || "",
             ...updatedProfileData,
           };
 
@@ -130,72 +74,18 @@ const ProfileComponent = () => {
         const { error: updateError } = await supabase
           .from("profiles")
           .update(updatedProfileData)
-          .eq("user_id", session.session.user.id);
+          .eq("user_id", userId);
 
         if (updateError) throw updateError;
       }
 
-      const { data: updatedProfile, error: fetchError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", session.session.user.id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      setProfile(updatedProfile as ProfileData);
+      await refreshProfile();
       setIsEditModalOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
+      setUpdateError(error?.message || "Failed to update profile");
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleAvatarUpload = async (file: File) => {
-    try {
-      setUploading(true);
-      const { data: session } = await supabase.auth.getSession();
-
-      if (!session.session?.user?.id) {
-        throw new Error("Authentication required");
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error("File size exceeds 5MB limit");
-      }
-
-      const validTypes = ["image/jpeg", "image/png", "image/jpg", "image/gif"];
-      if (!validTypes.includes(file.type)) {
-        throw new Error("Invalid file type. Please use JPG, PNG or GIF");
-      }
-
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${session.session.user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      if (profile.avatar_url) {
-        const oldPath = profile.avatar_url.split("/").pop();
-        if (oldPath) {
-          await supabase.storage.from("avatars").remove([oldPath]);
-        }
-      }
-
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("avatars").getPublicUrl(filePath);
-
-      await handleUpdateProfile({ avatar_url: publicUrl });
-    } catch (error: any) {
-      console.error("Error uploading avatar:", error);
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -214,32 +104,79 @@ const ProfileComponent = () => {
     return requiredFields.every((field) => Boolean(profile[field]));
   };
 
-  const missingFields = [
-    ...(!profile.date_of_birth ? ["Date of Birth"] : []),
-    ...(!profile.gender ? ["Gender"] : []),
-    ...(!profile.school_name ? ["School Name"] : []),
-    ...(!profile.department ? ["Department"] : []),
-    ...(!profile.level ? ["Level"] : []),
-    ...(!profile.state_of_origin ? ["State of Origin"] : []),
-    ...(!profile.matric_number ? ["Matriculation Number"] : []),
-  ];
+  console.log(userProfile);
 
-  if (loading) {
+  const missingFields = profile
+    ? [
+        ...(!profile.date_of_birth ? ["Date of Birth"] : []),
+        ...(!profile.gender ? ["Gender"] : []),
+        ...(!profile.school_name ? ["School Name"] : []),
+        ...(!profile.department ? ["Department"] : []),
+        ...(!profile.level ? ["Level"] : []),
+        ...(!profile.state_of_origin ? ["State of Origin"] : []),
+        ...(!profile.matric_number ? ["Matriculation Number"] : []),
+      ]
+    : [];
+
+  if (!isInitialized || loading) {
     return (
       <DefaultLayout>
         <DashboardLayout>
           <div className="flex justify-center items-center h-64">
-            <p>Loading profile...</p>
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading profile...</p>
+            </div>
           </div>
         </DashboardLayout>
       </DefaultLayout>
     );
   }
 
+  if (profileError && !profile) {
+    return (
+      <DefaultLayout>
+        <DashboardLayout>
+          <div className="flex justify-center items-center h-64">
+            <Card className="max-w-md">
+              <CardBody className="text-center p-6">
+                <div className="text-red-500 mb-4">
+                  <svg
+                    className="w-12 h-12 mx-auto"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Profile Error
+                </h3>
+                <p className="text-gray-600 mb-4">{profileError}</p>
+                <Button color="primary" onClick={refreshProfile}>
+                  Try Again
+                </Button>
+              </CardBody>
+            </Card>
+          </div>
+        </DashboardLayout>
+      </DefaultLayout>
+    );
+  }
+
+  if (!profile) {
+    return null;
+  }
+
   return (
     <DefaultLayout>
       <DashboardLayout>
         <div className="space-y-6 ml-4">
+          {/* Profile Completion Card */}
           {!profile.profile_complete && (
             <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
               <CardBody className="p-6">
@@ -250,7 +187,8 @@ const ProfileComponent = () => {
                     </h2>
                     <p className="text-gray-700 mb-4">
                       Please update the following information to get full access
-                      to all features:
+                      to all features. Your current game complexity level is{" "}
+                      {complexity}.
                     </p>
                     <div className="flex flex-wrap gap-2 mb-4">
                       {missingFields.map((field) => (
@@ -276,135 +214,171 @@ const ProfileComponent = () => {
             </Card>
           )}
 
-          <Card className="border border-gray-200">
-            <CardBody className="p-6">
-              <div className="flex flex-col md:flex-row gap-6">
-                <div className="flex flex-col items-center space-y-4">
-                  {profile.avatar_url ? (
-                    <Avatar
-                      src={profile.avatar_url}
-                      alt="Profile"
-                      className="w-32 h-32"
-                    />
-                  ) : (
-                    <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                      <svg
-                        className="w-full h-full text-gray-400"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112 15c3.183 0 6.235 1.264 8.485 3.515A9.975 9.975 0 0024 20.993zM12 12a6 6 0 100-12 6 6 0 000 12z" />
-                      </svg>
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    id="avatar-upload"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        handleAvatarUpload(e.target.files[0]);
-                      }
-                    }}
-                  />
-                  <Button
-                    variant="bordered"
-                    size="sm"
-                    onClick={() =>
-                      document.getElementById("avatar-upload")?.click()
-                    }
-                    isLoading={uploading}
-                    isDisabled={uploading}
+          {/* Error Messages */}
+          {(updateError || uploadError) && (
+            <Card className="border-red-200 bg-red-50">
+              <CardBody className="p-4">
+                <div className="flex items-center gap-2 text-red-700">
+                  <svg
+                    className="w-5 h-5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
                   >
-                    {uploading ? "Uploading..." : "Change Photo"}
-                  </Button>
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="font-medium">
+                    {updateError || uploadError}
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="light"
+                  color="danger"
+                  onClick={() => {
+                    setUpdateError(null);
+                    setUploadError(null);
+                  }}
+                  className="mt-2"
+                >
+                  Dismiss
+                </Button>
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Profile Information Card */}
+          <Card>
+            <CardBody className="p-6">
+              <div className="flex flex-col md:flex-row gap-12">
+                {/* Avatar Section */}
+                <div className="flex flex-col items-center gap-4">
+                  <Avatar
+                    src={
+                      
+                      session?.user?.user_metadata?.avatar_url
+                    }
+                    alt="Profile Avatar"
+                    className="w-32 h-32 text-lg"
+                    isBordered
+                  />
                 </div>
 
-                <div className="flex-1 space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h2 className="text-2xl font-bold">
-                        {profile.full_name || "Not provided"}
-                      </h2>
-                      <p className="text-gray-500">
-                        {profile.email || "Not provided"}
-                      </p>
-                    </div>
+                {/* Profile Details Section */}
+                <div className="flex-1">
+                  <div className="flex justify-between items-start mb-4">
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      {profile.full_name || "Anonymous User"}
+                    </h2>
                     <Button
-                      variant="flat"
+                      size="sm"
                       color="primary"
-                      onPress={() => setIsEditModalOpen(true)}
+                      variant="flat"
+                      onClick={() => setIsEditModalOpen(true)}
                     >
                       Edit Profile
                     </Button>
                   </div>
 
-                  <Divider />
+                  <Divider className="my-4" />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <span className="text-sm text-gray-500">
-                        Date of Birth
-                      </span>
-                      <p className="font-medium">
-                        {profile.date_of_birth || "Not provided"}
+                      <h3 className="text-sm font-semibold text-gray-500">
+                        Email
+                      </h3>
+                      <p className="text-gray-900">
+                        {profile.email || "Not provided"}
                       </p>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-500">Gender</span>
-                      <p className="font-medium">
+                      <h3 className="text-sm font-semibold text-gray-500">
+                        Matric Number
+                      </h3>
+                      <p className="text-gray-900">
+                        {profile.matric_number || "Not provided"}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-500">
+                        Date of Birth
+                      </h3>
+                      <p className="text-gray-900">
+                        {profile.date_of_birth
+                          ? new Date(profile.date_of_birth).toLocaleDateString()
+                          : "Not provided"}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-500">
+                        Gender
+                      </h3>
+                      <p className="text-gray-900">
                         {profile.gender || "Not provided"}
                       </p>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-500">School</span>
-                      <p className="font-medium">
+                      <h3 className="text-sm font-semibold text-gray-500">
+                        School
+                      </h3>
+                      <p className="text-gray-900">
                         {profile.school_name || "Not provided"}
                       </p>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-500">Department</span>
-                      <p className="font-medium">
+                      <h3 className="text-sm font-semibold text-gray-500">
+                        Department
+                      </h3>
+                      <p className="text-gray-900">
                         {profile.department || "Not provided"}
                       </p>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-500">Level</span>
-                      <p className="font-medium">
+                      <h3 className="text-sm font-semibold text-gray-500">
+                        Level
+                      </h3>
+                      <p className="text-gray-900">
                         {profile.level || "Not provided"}
                       </p>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-500">
+                      <h3 className="text-sm font-semibold text-gray-500">
                         State of Origin
-                      </span>
-                      <p className="font-medium">
+                      </h3>
+                      <p className="text-gray-900">
                         {profile.state_of_origin || "Not provided"}
                       </p>
                     </div>
-                    <div>
-                      <span className="text-sm text-gray-500">
-                        Matric Number
-                      </span>
-                      <p className="font-medium">
-                        {profile.matric_number || "Not provided"}
+                  </div>
+
+                  {profile.profile_complete && (
+                    <div className="mt-6">
+                      <Chip color="success" variant="flat">
+                        Profile Complete
+                      </Chip>
+                      <p className="text-sm text-gray-600 mt-2">
+                        Your profile is 100% complete. Thank you for providing
+                        all the required information.
                       </p>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </CardBody>
           </Card>
-
-          <ProfileEditorModal
-            isOpen={isEditModalOpen}
-            onClose={() => setIsEditModalOpen(false)}
-            profile={profile}
-            onSave={handleUpdateProfile}
-            isSaving={isSaving}
-          />
         </div>
+
+        {/* Profile Editor Modal */}
+        <ProfileEditorModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          profile={profile}
+          onSave={handleUpdateProfile}
+          isSaving={isSaving}
+        />
       </DashboardLayout>
     </DefaultLayout>
   );

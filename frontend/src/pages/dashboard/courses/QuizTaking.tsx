@@ -1,5 +1,5 @@
 // src/pages/dashboard/courses/QuizTaking.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Card,
@@ -15,6 +15,7 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
+  Spinner,
 } from "@heroui/react";
 import {
   ArrowLeft,
@@ -29,8 +30,7 @@ import { supabase } from "@/supabaseClient";
 import DefaultLayout from "@/layouts/default";
 import DashboardLayout from "@/layouts/dashboardLayout";
 import { Quiz, QuizOption, QuizQuestion, UserAnswer } from "@/types";
-
-
+import QuizLabelingGame from "../components/labelingGame";
 
 const QuizTaking = () => {
   const { quizId } = useParams<{ quizId: string }>();
@@ -51,12 +51,18 @@ const QuizTaking = () => {
   const [score, setScore] = useState<{ correct: number; total: number } | null>(
     null
   );
+  const [showLabelingGame, setShowLabelingGame] = useState(false);
+  const [isTimerPaused, setIsTimerPaused] = useState(false);
+  const [labelingGameKey, setLabelingGameKey] = useState(0); // Add key to force remount
 
   const {
     isOpen: isSubmitModalOpen,
     onOpen: onSubmitModalOpen,
     onClose: onSubmitModalClose,
   } = useDisclosure();
+
+  // Compute answered questions count
+  const answeredQuestions = userAnswers.size;
 
   // Fetch quiz and questions
   useEffect(() => {
@@ -107,16 +113,43 @@ const QuizTaking = () => {
     fetchQuizData();
   }, [quizId]);
 
+  // Timer effect
+  useEffect(() => {
+    if (!isReviewMode && timeLeft > 0 && !isTimerPaused) {
+      const timer = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [isReviewMode, timeLeft, isTimerPaused]);
+
+  // Auto-submit when time runs out
+  useEffect(() => {
+    if (timeLeft === 0 && !isReviewMode && !submitting && !loading) {
+      handleSubmitQuiz();
+    }
+  }, [timeLeft, isReviewMode, submitting, loading]);
+
   // Fetch user's previous answers for review mode
-  const fetchUserAnswers = async () => {
+  const fetchUserAnswers = useCallback(async () => {
     if (!quizId) return;
 
     try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       const { data, error } = await supabase
         .from("quiz_attempts")
         .select("question_id, selected_option_id, is_correct")
         .eq("quiz_id", quizId)
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id);
+        .eq("user_id", user.id);
 
       if (error) throw error;
 
@@ -133,24 +166,7 @@ const QuizTaking = () => {
     } catch (error) {
       console.error("Error fetching user answers:", error);
     }
-  };
-
-  // Timer countdown
-  useEffect(() => {
-    if (!isReviewMode && timeLeft > 0) {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            handleSubmitQuiz();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
-    }
-  }, [timeLeft, isReviewMode]);
+  }, [quizId]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -161,7 +177,23 @@ const QuizTaking = () => {
   const handleAnswerChange = (questionId: string, optionId: string) => {
     if (isReviewMode) return;
 
-    setUserAnswers((prev) => new Map(prev.set(questionId, optionId)));
+    setUserAnswers((prev) => {
+      const newMap = new Map(prev);
+      const wasAlreadyAnswered = newMap.has(questionId);
+      newMap.set(questionId, optionId);
+
+      // Only trigger for new answers (not updates)
+      if (!wasAlreadyAnswered) {
+        const newAnsweredCount = newMap.size;
+        if (newAnsweredCount % 4 === 0 && newAnsweredCount > 0) {
+          setIsTimerPaused(true);
+          setLabelingGameKey((prev) => prev + 1); // Increment key to force remount
+          setShowLabelingGame(true);
+        }
+      }
+
+      return newMap;
+    });
   };
 
   const handleNextQuestion = () => {
@@ -176,7 +208,7 @@ const QuizTaking = () => {
     }
   };
 
-  const handleSubmitQuiz = async () => {
+  const handleSubmitQuiz = useCallback(async () => {
     if (submitting) return;
 
     setSubmitting(true);
@@ -236,7 +268,7 @@ const QuizTaking = () => {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [quizId, questions, userAnswers, onSubmitModalClose, submitting]);
 
   const getOptionColor = (
     question: QuizQuestion,
@@ -257,7 +289,7 @@ const QuizTaking = () => {
     return "default";
   };
 
-  // Add this function inside your QuizTaking component
+  // Reset quiz
   const handleResetQuiz = async () => {
     if (!quizId) return;
 
@@ -296,12 +328,19 @@ const QuizTaking = () => {
     }
   };
 
+  const handleLabelingComplete = () => {
+    setShowLabelingGame(false);
+    setIsTimerPaused(false);
+    // The labeling game component will handle its own cleanup
+    // and fetch a fresh task next time it's shown
+  };
+
   if (loading) {
     return (
       <DefaultLayout>
         <DashboardLayout>
           <div className="flex justify-center items-center min-h-screen">
-            <div>Loading quiz...</div>
+            <Spinner size="lg" />
           </div>
         </DashboardLayout>
       </DefaultLayout>
@@ -324,7 +363,6 @@ const QuizTaking = () => {
   }
 
   const currentQuestion = questions[currentQuestionIndex];
-  const answeredQuestions = Array.from(userAnswers.keys()).length;
   const progressPercentage =
     ((currentQuestionIndex + 1) / questions.length) * 100;
 
@@ -591,6 +629,14 @@ const QuizTaking = () => {
               </ModalFooter>
             </ModalContent>
           </Modal>
+
+          {/* Labeling Game Modal */}
+          {showLabelingGame && (
+            <QuizLabelingGame
+              key={labelingGameKey} // Force remount with new task
+              onComplete={handleLabelingComplete}
+            />
+          )}
         </div>
       </DashboardLayout>
     </DefaultLayout>

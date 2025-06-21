@@ -1,6 +1,6 @@
 //@ts-nocheck
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   Card,
   CardBody,
@@ -27,344 +27,56 @@ import {
   FileImage,
   AlertTriangle,
 } from "lucide-react";
-import { supabase } from "@/supabaseClient";
 import DefaultLayout from "@/layouts/default";
 import DashboardLayout from "@/layouts/dashboardLayout";
 import UploadModal from "./studyLibrary/uploadModal";
-
-interface Resource {
-  id: string;
-  title: string;
-  type: string;
-  course: string;
-  year: string;
-  description?: string;
-  file_url?: string;
-  file_size?: number;
-  pages?: number;
-  duration?: string;
-  is_new: boolean;
-  is_featured?: boolean;
-  rating: number;
-  downloads: number;
-  created_at: string;
-}
-
-interface ResourceType {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-}
-
-interface DownloadError {
-  resourceId: string;
-  error: string;
-  timestamp: Date;
-}
+import { useStudyLibraryContext } from "./context/studyLibraryContext";
 
 const StudyLibrary: React.FC = () => {
-  const [resources, setResources] = useState<Resource[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [courseFilter, setCourseFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("popular");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
-  const [downloadErrors, setDownloadErrors] = useState<DownloadError[]>([]);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const itemsPerPage = 6;
+  // Get all state and functions from context
+  const {
+    // Resource state
+    resources,
+    loading,
+    fetchError,
 
-  const resourceTypes: ResourceType[] = [
-    { label: "All Resources", value: "all", icon: <LibraryBig size={16} /> },
-    { label: "Textbooks", value: "textbook", icon: <BookOpen size={16} /> },
-    { label: "Lecture Notes", value: "notes", icon: <FileText size={16} /> },
-    {
-      label: "Past Papers",
-      value: "past-paper",
-      icon: <FileSpreadsheet size={16} />,
-    },
-    {
-      label: "Cheat Sheets",
-      value: "cheatsheet",
-      icon: <FileImage size={16} />,
-    },
-  ];
+    // Filter and search state
+    searchTerm,
+    courseFilter,
+    typeFilter,
+    sortBy,
 
-  const courses: string[] = [
-    "CSC 101",
-    "CSC 201",
-    "CSC 301",
-    "CSC 305",
-    "CSC 401",
-    "CSC 501",
-  ];
+    // Pagination state
+    currentPage,
+    totalPages,
+    paginatedResources,
 
-  // Enhanced error handling for user notifications
-  const showUserError = (message: string, details?: string) => {
-    const fullMessage = details ? `${message}\n\nDetails: ${details}` : message;
-    alert(fullMessage);
-  };
+    // Featured resources
+    featuredResources,
 
-  // Enhanced fetch resources with comprehensive error handling
-  const fetchResources = async (): Promise<void> => {
-    setFetchError(null);
+    // Download state
+    downloadingIds,
+    downloadErrors,
 
-    try {
-      setLoading(true);
+    // Modal state
+    isUploadModalOpen,
 
-      let query = supabase
-        .from("resources")
-        .select("*")
-        .order("created_at", { ascending: false });
+    // Static data
+    courses,
+    resourceTypes,
 
-      // Apply filters with logging
-      if (courseFilter !== "all") {
-        query = query.eq("course", courseFilter);
-      }
+    // Actions
+    handleDownload,
+    setSearchTerm,
+    setCourseFilter,
+    setTypeFilter,
+    setSortBy,
+    setCurrentPage,
+    setIsUploadModalOpen,
+    handleUploadSuccess,
+  } = useStudyLibraryContext();
 
-      if (typeFilter !== "all") {
-        query = query.eq("type", typeFilter);
-      }
-
-      if (searchTerm.trim()) {
-        query = query.ilike("title", `%${searchTerm.trim()}%`);
-      }
-
-      const { data } = await query;
-
-      if (!data) {
-        setResources([]);
-        return;
-      }
-
-      // Sort the data with error handling
-      let sortedData: Resource[] = [...data];
-      try {
-        switch (sortBy) {
-          case "recent":
-            sortedData.sort(
-              (a, b) =>
-                new Date(b.created_at).getTime() -
-                new Date(a.created_at).getTime()
-            );
-            break;
-          case "rating":
-            sortedData.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-            break;
-          case "popular":
-          default:
-            sortedData.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
-            break;
-        }
-      } catch (sortError) {
-        // Continue with unsorted data rather than failing completely
-      }
-
-      setResources(sortedData);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
-
-      setFetchError(errorMessage);
-      setResources([]);
-      showUserError("Failed to load resources", errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Enhanced download handler with comprehensive logging and error handling
-  const handleDownload = async (resource: Resource): Promise<void> => {
-    // Validate resource data
-    if (!resource.file_url) {
-      const errorMsg = "No file URL available for download";
-      showUserError(errorMsg);
-      return;
-    }
-
-    if (!resource.id) {
-      const errorMsg = "Invalid resource ID";
-      showUserError(errorMsg);
-      return;
-    }
-
-    // Check if already downloading
-    if (downloadingIds.has(resource.id)) {
-      return;
-    }
-
-    try {
-      // Set downloading state
-      setDownloadingIds((prev) => {
-        const newSet = new Set(prev);
-        newSet.add(resource.id);
-        return newSet;
-      });
-
-      // Step 1: Update download counter in database
-      const newDownloadCount = (resource.downloads || 0) + 1;
-
-      await supabase
-        .from("resources")
-        .update({ downloads: newDownloadCount })
-        .eq("id", resource.id);
-
-      // Step 2: Fetch the file
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-      }, 30000); // 30 second timeout
-
-      const response = await fetch(resource.file_url, {
-        method: "GET",
-        signal: controller.signal,
-        headers: {
-          Accept: "*/*",
-        },
-      });
-
-      clearTimeout(timeoutId);
-
-      // Check content type
-      const contentType = response.headers.get("content-type");
-
-      // Step 3: Convert to blob
-      const blob = await response.blob();
-
-      if (blob.size === 0) {
-        throw new Error("Downloaded file is empty");
-      }
-
-      // Step 4: Create download link and trigger download
-      const url = window.URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      link.href = url;
-
-      // Extract filename from URL or use title with proper extension
-      let filename: string;
-      try {
-        const urlParts = resource.file_url.split("/");
-        const urlFilename = urlParts[urlParts.length - 1];
-
-        if (urlFilename && urlFilename.includes(".")) {
-          filename = decodeURIComponent(urlFilename);
-        } else {
-          // Determine extension based on content type or default to PDF
-          let extension = ".pdf";
-          if (contentType) {
-            if (contentType.includes("image")) extension = ".jpg";
-            else if (contentType.includes("text")) extension = ".txt";
-            else if (
-              contentType.includes("excel") ||
-              contentType.includes("spreadsheet")
-            )
-              extension = ".xlsx";
-            else if (contentType.includes("word")) extension = ".docx";
-          }
-          filename = `${resource.title.replace(/[^a-zA-Z0-9\s]/g, "")}${extension}`;
-        }
-      } catch (filenameError) {
-        filename = `${resource.title.replace(/[^a-zA-Z0-9\s]/g, "")}.pdf`;
-      }
-
-      link.download = filename;
-
-      // Trigger download
-      document.body.appendChild(link);
-      link.click();
-
-      // Cleanup
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      // Step 5: Refresh resources to show updated download count
-      await fetchResources();
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown download error";
-      const downloadError: DownloadError = {
-        resourceId: resource.id,
-        error: errorMessage,
-        timestamp: new Date(),
-      };
-
-      setDownloadErrors((prev) => [...prev, downloadError]);
-
-      // Provide specific error messages based on error type
-      let userMessage = "Failed to download file";
-      if (errorMessage.includes("HTTP")) {
-        userMessage = "File server is not responding. Please try again later.";
-      } else if (
-        errorMessage.includes("timeout") ||
-        errorMessage.includes("aborted")
-      ) {
-        userMessage =
-          "Download timed out. Please check your connection and try again.";
-      } else if (
-        errorMessage.includes("network") ||
-        errorMessage.includes("fetch")
-      ) {
-        userMessage =
-          "Network error occurred. Please check your internet connection.";
-      }
-
-      showUserError(userMessage, errorMessage);
-    } finally {
-      // Always remove from downloading set
-      setDownloadingIds((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(resource.id);
-        return newSet;
-      });
-    }
-  };
-
-  // Handle successful upload with logging
-  const handleUploadSuccess = (): void => {
-    setIsUploadModalOpen(false);
-    fetchResources();
-  };
-
-  // Enhanced useEffect with error handling
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchResources();
-    }, 300); // Debounce to avoid too many API calls
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [searchTerm, courseFilter, typeFilter, sortBy]);
-
-  // Clear old download errors periodically
-  useEffect(() => {
-    const cleanup = setInterval(() => {
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-      setDownloadErrors((prev) =>
-        prev.filter((error) => error.timestamp > oneHourAgo)
-      );
-    }, 60000); // Check every minute
-
-    return () => clearInterval(cleanup);
-  }, []);
-
-  // Pagination calculations with error handling
-  const totalPages = Math.max(1, Math.ceil(resources.length / itemsPerPage));
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedResources: Resource[] = resources.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
-
-  const featuredResources: Resource[] = resources
-    .sort(() => 0.5 - Math.random())
-    .slice(0, 3);
-
-  // Placeholder image URL
+  // Placeholder image URLs
   const placeholderImage: string =
     "https://imgs.search.brave.com/vXmnKh72ckf3x4CjZY4NAekzxi0I4dZGwGOo3xTceNY/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9sZWFy/bmluZy5vcmVpbGx5/LmNvbS9jb3ZlcnMv/dXJuOm9ybTpib29r/Ojk3ODEwOTgxNTI2/MDQvNDAwdy8";
 

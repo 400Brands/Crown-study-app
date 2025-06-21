@@ -12,7 +12,7 @@ import {
 } from "@heroui/react";
 import { FileText, Clock, ChevronRight, FileUp, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
-import PDFQuizGeneratorModal from "../components/PDFQuizGeneratorModal";
+import PDFQuizGeneratorModal from "../../components/PDFQuizGeneratorModal";
 import { supabase } from "@/supabaseClient";
 import { Question } from "@/types";
 
@@ -40,9 +40,7 @@ const CourseQuizzes = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 6;
 
-  const availableCourses: Course[] = [
-   
-  ];
+  const availableCourses: Course[] = [];
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
@@ -173,7 +171,7 @@ const CourseQuizzes = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Spinner size="lg" label="Loading flashcard decks..." />
+        <Spinner size="lg" label="Loading Quizzes decks..." />
       </div>
     );
   }

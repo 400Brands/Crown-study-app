@@ -94,7 +94,7 @@ const navigationItems: NavGroup[] = [
     items: [
       { name: "Profile", icon: User, path: "/dashboard/profile" },
       { name: "Settings", icon: Settings, path: "/dashboard/settings" },
-      { name: "Help", icon: HelpCircle, path: "/dashboard/help" },
+      { name: "Help", icon: HelpCircle, path: "/" },
     ],
   },
 ];

@@ -14,6 +14,7 @@ import {
 import { Zap, AlertCircle } from "lucide-react";
 import { QuizConfig, Question } from "@/types";
 import { GoogleGenAI } from "@google/genai";
+import { supabase } from "@/supabaseClient";
 
 interface QuizConfigStepProps {
   pdfUrl: string;
@@ -114,62 +115,99 @@ export default function QuizConfigStep({
   // Fetch PDF from URL and extract text with CORS handling
   const fetchAndExtractPdf = async (url: string): Promise<string> => {
     try {
-      // First try direct fetch
-      let response;
-      try {
-        response = await fetch(url, {
-          mode: "cors",
-          headers: {
-            Accept: "application/pdf",
-          },
-        });
-      } catch (corsError) {
-        console.warn("Direct fetch failed, trying proxy approach:", corsError);
-
-        // Try with a CORS proxy as fallback
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-        response = await fetch(proxyUrl);
+      // First verify it's a PDF URL
+      if (!url.toLowerCase().endsWith(".pdf")) {
+        throw new Error("Only PDF files are supported");
       }
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Improved URL parsing for Supabase storage
+      const parseSupabaseUrl = (url: string) => {
+        try {
+          const urlObj = new URL(url);
+          const pathParts = urlObj.pathname.split("/").filter(Boolean);
+
+          if (
+            pathParts.length >= 4 &&
+            pathParts[0] === "storage" &&
+            pathParts[1] === "v1" &&
+            pathParts[2] === "object"
+          ) {
+            const bucketName =
+              pathParts[3] === "sign" || pathParts[3] === "public"
+                ? pathParts[4]
+                : pathParts[3];
+            const filePath = pathParts
+              .slice(
+                pathParts[3] === "sign" || pathParts[3] === "public" ? 5 : 4
+              )
+              .join("/");
+            return { bucketName, filePath };
+          }
+          throw new Error("URL does not match Supabase storage pattern");
+        } catch (e) {
+          throw new Error("Invalid Supabase storage URL");
+        }
+      };
+
+      const { bucketName, filePath } = parseSupabaseUrl(url);
+
+      // Download the file via Supabase Storage
+      const { data, error } = await supabase.storage
+        .from(bucketName)
+        .download(filePath);
+
+      if (error) {
+        throw error;
       }
 
-      const arrayBuffer = await response.arrayBuffer();
+      // Continue with PDF processing...
+      const arrayBuffer = await data.arrayBuffer();
+      const pdfjs = await import("pdfjs-dist");
+      pdfjs.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
 
-      // Check if we actually got a PDF
-      const uint8Array = new Uint8Array(arrayBuffer);
-      const pdfSignature = uint8Array.slice(0, 4);
-      const isPdf =
-        pdfSignature[0] === 0x25 && // %
-        pdfSignature[1] === 0x50 && // P
-        pdfSignature[2] === 0x44 && // D
-        pdfSignature[3] === 0x46; // F
+      const pdf = await pdfjs.getDocument(arrayBuffer).promise;
+      let fullText = "";
 
-      if (!isPdf) {
-        throw new Error("The fetched file is not a valid PDF");
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        fullText += textContent.items.map((item) => item.str).join(" ") + "\n";
       }
 
-      const pdfParse = await import("pdf-parse");
-      const data = await pdfParse.default(Buffer.from(arrayBuffer));
-
-      if (!data.text || data.text.trim().length === 0) {
-        throw new Error(
-          "No text could be extracted from this PDF. It may be image-based or password-protected."
-        );
+      if (!fullText.trim()) {
+        throw new Error("No text could be extracted from this PDF");
       }
 
-      return data.text;
+      return fullText;
     } catch (error) {
       console.error("PDF fetch/extraction error:", error);
+      throw new Error(
+        error instanceof Error ? error.message : "Failed to process PDF"
+      );
     }
   };
 
   // Improved JSON cleaning function
   const cleanAndParseJSON = (text: string | undefined): any => {
+    // First check if we have any text to work with
+    if (text === undefined || text === null) {
+      throw new Error("No text provided to parse");
+    }
+
+    // Ensure it's a string
+    if (typeof text !== "string") {
+      throw new Error(`Expected string but got ${typeof text}`);
+    }
+
     let jsonText = text.trim();
 
-    // Remove markdown code blocks
+    // If we got an empty string after trimming
+    if (jsonText.length === 0) {
+      throw new Error("Empty text provided to parse");
+    }
+
+    // Rest of your existing cleaning logic...
     const codeBlockMatch = jsonText.match(/```(?:json)?\n?([\s\S]*?)\n?```/);
     if (codeBlockMatch) {
       jsonText = codeBlockMatch[1].trim();
@@ -277,9 +315,13 @@ export default function QuizConfigStep({
         throw new Error("No PDF file or URL provided");
       }
 
-      if (!pdfText.trim()) {
+      // Add explicit check for extracted text
+      if (!pdfText?.trim()) {
         throw new Error("No text could be extracted from the PDF");
       }
+
+      console.log("PDF text length:", pdfText?.length);
+      
 
       // Stage 2: Analyze content
       setCurrentStage(PROCESSING_STAGES[1]);
@@ -351,6 +393,11 @@ Generate the JSON array now:`;
               model: model,
               contents: prompt,
             });
+
+            // Add this check
+            if (!response?.text) {
+              throw new Error("AI returned an empty response");
+            }
 
             const text = response.text;
 
@@ -459,23 +506,15 @@ Generate the JSON array now:`;
       );
     } catch (error) {
       console.error("Error generating questions:", error);
-      let errorMessage = "An unexpected error occurred";
-
+      let errorMessage = "Failed to process PDF";
+      
       if (error instanceof Error) {
-        if (
-          error.message.includes("overloaded") ||
-          error.message.includes("503")
-        ) {
-          errorMessage =
-            "The AI service is currently overloaded. Please try again in a few moments.";
-        } else if (error.message.includes("API key")) {
-          errorMessage =
-            "AI service configuration error. Please contact support.";
-        } else {
-          errorMessage = error.message;
+        errorMessage = error.message;
+        if (error.message.includes("No text could be extracted")) {
+          errorMessage = "The PDF appears to be image-based or empty. Please try a different PDF.";
         }
       }
-
+  
       setProcessingError(errorMessage);
       onError(errorMessage);
       return [];
@@ -583,7 +622,6 @@ Generate the JSON array now:`;
             isDisabled={isProcessing}
           />
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Number of Questions Select - Styled to match */}
           <div className="flex flex-col bg-gray-100 rounded-lg transition-all duration-200 hover:bg-gray-50 focus-within:bg-gray-50">
@@ -676,7 +714,6 @@ Generate the JSON array now:`;
             </div>
           </div>
         </div>
-
         <div className="space-y-3">
           <label className="text-sm font-medium text-gray-700">
             Question Types <span className="text-red-500">*</span>
@@ -718,7 +755,6 @@ Generate the JSON array now:`;
             </p>
           )}
         </div>
-
         {/* Processing Status */}
         {isProcessing && currentStage && (
           <div className="bg-gray-50 p-4 rounded-lg border space-y-3">
@@ -747,7 +783,6 @@ Generate the JSON array now:`;
             </p>
           </div>
         )}
-
         {/* Error Display */}
         {processingError && (
           <div className="bg-red-50 p-4 rounded-lg border border-red-200">
@@ -755,20 +790,25 @@ Generate the JSON array now:`;
               <AlertCircle className="text-red-600 mt-0.5" size={20} />
               <div>
                 <h4 className="font-medium text-red-900">Processing Error</h4>
-                <p className="text-red-700 text-sm mt-1">{processingError}</p>
-                {processingError.includes("overloaded") && (
-                  <button
-                    onClick={handleSubmitConfig}
-                    className="mt-2 text-sm text-red-600 underline hover:text-red-800"
-                  >
-                    Click here to try again
-                  </button>
-                )}
+                <p className="text-red-700 text-sm mt-1">
+                  {processingError.includes("Invalid Supabase storage URL") ? (
+                    <>
+                      The resource URL format is invalid. Please contact
+                      support.
+                      <br />
+                      <span className="text-xs text-red-600">
+                        (Expected format:
+                        https://[project].supabase.co/storage/v1/object/[bucket]/[path])
+                      </span>
+                    </>
+                  ) : (
+                    processingError
+                  )}
+                </p>
               </div>
             </div>
           </div>
         )}
-
         {/* Submit Button */}
         <div className="flex justify-end pt-4 border-t">
           <Button

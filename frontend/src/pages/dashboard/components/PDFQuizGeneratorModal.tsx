@@ -10,7 +10,7 @@ import {
 import { FileText } from "lucide-react";
 import { PDFQuizGeneratorModalProps, Question } from "@/types";
 import PDFUploadStep from "./PDFUploadStep";
-import QuizConfigStep from "./quizConfigStep";
+import QuizConfigStep from "../courses/quiz/quizConfigStep";
 
 export default function PDFQuizGeneratorModal({
   isOpen,
@@ -25,8 +25,14 @@ export default function PDFQuizGeneratorModal({
   const [pdfFile, setPdfFile] = useState<File | null>(null);
 
 
-  const handleUploadComplete = (url: string) => {
+  const handleUploadComplete = (
+    url: string,
+    source?: "upload" | "existing",
+    file?: File | null,
+    resource?: any
+  ) => {
     setPdfUrl(url);
+    setPdfFile(file || null);
     setStep(2);
   };
 
@@ -117,7 +123,7 @@ export default function PDFQuizGeneratorModal({
 
           {step === 2 && pdfUrl && (
             <QuizConfigStep
-              pdfUrl=""
+              pdfUrl={pdfUrl} // Pass the actual URL state
               pdfFile={pdfFile}
               availableCourses={availableCourses}
               onQuizGenerated={handleQuizGenerated}

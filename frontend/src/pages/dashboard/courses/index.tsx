@@ -4,7 +4,7 @@ import { Tabs, Tab } from "@heroui/react";
 import DashboardLayout from "@/layouts/dashboardLayout";
 import DefaultLayout from "@/layouts/default";
 import { useState } from "react";
-import CourseQuizzes from "./quizzes";
+import CourseQuizzes from "./quiz/quizzes";
 import PastQuestions from "./pastQuestions";
 import Flashcards from "./flashCards";
 import Overview from "./Overview";
@@ -18,7 +18,7 @@ const MyCourses = () => {
     {
       id: 1,
       title: "Imagination is more important than knowledge. - Albert Einstein",
-      
+
       color: "bg-blue-500",
       thumbnail:
         "https://imgs.search.brave.com/XpBNMOML5vHo435XvKl7TySns3Z-zQ3JEmvAo0DbmI8/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9yZW5k/ZXIuZmluZWFydGFt/ZXJpY2EuY29tL2lt/YWdlcy9yZW5kZXJl/ZC9zZWFyY2gvcHJp/bnQvNi41LzgvYnJl/YWsvaW1hZ2VzL2Fy/dHdvcmtpbWFnZXMv/bWVkaXVtLzIvYWxi/ZXJ0LWVpbnN0ZWlu/LXNtb2tpbmctYS1w/aXBlLWJldHRtYW5u/LmpwZw",
@@ -27,7 +27,7 @@ const MyCourses = () => {
       id: 2,
       title:
         "When something is important enough, you do it even if the odds are not in your favor - Elon Musk",
-      
+
       color: "bg-purple-500",
       thumbnail:
         "https://imgs.search.brave.com/hCJenTbgMFuYzM0YXaltkfB5xUMf6fX0_DroEYn4xkY/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9jZG4u/YnJpdGFubmljYS5j/b20vMDUvMjM2NTA1/LTA1MC0xN0I2RTM0/QS9FbG9uLU11c2st/MjAyMi5qcGc_dz0z/ODU",
@@ -35,7 +35,7 @@ const MyCourses = () => {
     {
       id: 3,
       title: "Don’t wait for permission to build the future. - Iyinoluwa A",
-      
+
       color: "bg-purple-500",
       thumbnail:
         "https://imgs.search.brave.com/1lCXzzMITqwXM1JlGA2LfOGx_QZTjkIPKuH87lkSvLA/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9naXN0/ZmxhcmUuY29tLm5n/L3dwLWNvbnRlbnQv/dXBsb2Fkcy8yMDIy/LzA0L0l5aW5vbHV3/YS1BYm95ZWppLmpw/Zw",

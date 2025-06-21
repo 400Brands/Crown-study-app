@@ -30,7 +30,7 @@ import { supabase } from "@/supabaseClient";
 import DefaultLayout from "@/layouts/default";
 import DashboardLayout from "@/layouts/dashboardLayout";
 import { Quiz, QuizOption, QuizQuestion, UserAnswer } from "@/types";
-import QuizLabelingGame from "../components/labelingGame";
+import QuizLabelingGame from "../../components/labelingGame";
 
 const QuizTaking = () => {
   const { quizId } = useParams<{ quizId: string }>();

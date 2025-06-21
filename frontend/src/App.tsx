@@ -11,8 +11,8 @@ import AboutPage from "@/pages/about";
 import MyCourses from "@/pages/dashboard/courses";
 import StudyPlanner from "./pages/dashboard/studyPlanner";
 import GameMode from "./pages/dashboard/gameMode/gameMode";
-import CourseQuizzes from "./pages/dashboard/courses/quizzes";
-import QuizTaking from "./pages/dashboard/courses/QuizTaking";
+import CourseQuizzes from "./pages/dashboard/courses/quiz/quizzes";
+import QuizTaking from "./pages/dashboard/courses/quiz/QuizTaking";
 import StudyLibrary from "./pages/dashboard/studyLibrary";
 import DashboardPage from "@/pages/dashboard/home";
 import NotesFeed from "./pages/dashboard/notesFeed";
@@ -21,11 +21,13 @@ import Settings from "./pages/dashboard/settings";
 import Opportunities from "./pages/dashboard/opportunities";
 import { GameProvider } from "./pages/dashboard/context/GameProvider";
 import LabelingStatsDashboard from "./pages/admin";
+import { StudyLibraryProvider } from "./pages/dashboard/context/studyLibraryContext";
 
 function App() {
   return (
     <GameProvider>
-      <Routes>
+      <StudyLibraryProvider>
+        <Routes>
         {/* Public Routes */}
         <Route path="/" element={<IndexPage />} />
         <Route path="/docs" element={<DocsPage />} />
@@ -58,6 +60,8 @@ function App() {
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
+      </StudyLibraryProvider>
+      
     </GameProvider>
   );
 }

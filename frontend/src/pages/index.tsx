@@ -24,6 +24,8 @@ export default function IndexPage() {
               src="https://lottie.host/c9d99835-7150-422b-a928-2c9171b144da/VEJ9kxpKQg.lottie"
               loop
               autoplay
+              width={350}
+              height={350}
             />
           </div>
 
@@ -46,12 +48,6 @@ export default function IndexPage() {
 
             <div className="mt-6 flex gap-4">
               <GetStarted size="lg" />
-              <Image
-                src="https://distinction.app/try-for-free.svg"
-                width={100}
-                alt="Screenshot"
-                className="w-full h-auto object-cover rounded-lg mt-5"
-              />
             </div>
           </div>
         </section>
@@ -316,10 +312,13 @@ export default function IndexPage() {
         </section>
 
         {/* How It Works Section */}
-        <section className="w-full bg-neutral-50 dark:bg-neutral-900 py-20">
+        <section className="w-full bg-neutral-50 dark:bg-neutral-900 py-20 rounded-lg">
           <div className="container mx-auto max-w-7xl px-6">
             <div className="text-center mb-16">
-              <h2 className={title({ size: "md" })}>How CrownStudy Works</h2>
+              <h2 className={title({ size: "md" })}>
+                <b>How CrownStudy Works</b>
+              </h2>
+
               <p className={subtitle({ class: "mt-4 mx-auto max-w-2xl" })}>
                 A simple but powerful approach to transform your academic
                 performance
@@ -368,207 +367,11 @@ export default function IndexPage() {
           </div>
         </section>
 
-        {/* All Features Section */}
-        <section id="all-features" className="w-full py-20">
-          <div className="container mx-auto max-w-7xl px-6">
-            <div className="text-center mb-16">
-              <h2 className={title({ size: "md" })}>
-                Comprehensive Feature Set
-              </h2>
-              <p className={subtitle({ class: "mt-4 mx-auto max-w-2xl" })}>
-                Everything you need to excel in your academic journey
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-full bg-green-100 text-green-600">
-                  <CheckIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium mb-2">
-                    Personalized User Profiles
-                  </h3>
-                  <p className="text-neutral-600 dark:text-neutral-400">
-                    Create detailed academic profiles with your institution,
-                    department, level, and interests to receive tailored
-                    content.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-full bg-green-100 text-green-600">
-                  <CheckIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium mb-2">
-                    Crowd-sourced Past Questions
-                  </h3>
-                  <p className="text-neutral-600 dark:text-neutral-400">
-                    Access and contribute to a growing repository of past
-                    questions in various formats (PDF, image, text).
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-full bg-green-100 text-green-600">
-                  <CheckIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium mb-2">
-                    Adaptive Course Quizzes
-                  </h3>
-                  <p className="text-neutral-600 dark:text-neutral-400">
-                    Practice with AI-generated quizzes based on your study
-                    materials with integrated VQA challenges for reinforced
-                    learning.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-full bg-green-100 text-green-600">
-                  <CheckIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium mb-2">
-                    PDF-driven Audio Lectures
-                  </h3>
-                  <p className="text-neutral-600 dark:text-neutral-400">
-                    Convert study materials into audio lectures with optional
-                    synchronized text highlighting for auditory learners.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-full bg-green-100 text-green-600">
-                  <CheckIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium mb-2">
-                    AI-generated Study Aids
-                  </h3>
-                  <p className="text-neutral-600 dark:text-neutral-400">
-                    Automatically generate flashcards and key points from your
-                    study materials for quick revision.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-full bg-green-100 text-green-600">
-                  <CheckIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium mb-2">
-                    Personal Notes Feed
-                  </h3>
-                  <p className="text-neutral-600 dark:text-neutral-400">
-                    Create and share notes with options for public or private
-                    visibility, earning points for engagement.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-full bg-green-100 text-green-600">
-                  <CheckIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Q&A Community</h3>
-                  <p className="text-neutral-600 dark:text-neutral-400">
-                    Collaborate with peers through department-specific group
-                    chats with peer verification for accurate information.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-full bg-green-100 text-green-600">
-                  <CheckIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium mb-2">
-                    Lecturer Escalation
-                  </h3>
-                  <p className="text-neutral-600 dark:text-neutral-400">
-                    Request additional clarification from lecturers through
-                    automated email or WhatsApp reminders when concepts remain
-                    unclear.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-full bg-green-100 text-green-600">
-                  <CheckIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium mb-2">
-                    AI-powered Study Planner
-                  </h3>
-                  <p className="text-neutral-600 dark:text-neutral-400">
-                    Get personalized study schedules with push notifications
-                    based on your course load and exam dates.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-full bg-green-100 text-green-600">
-                  <CheckIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium mb-2">
-                    Department/Year Leaderboards
-                  </h3>
-                  <p className="text-neutral-600 dark:text-neutral-400">
-                    Track your progress and compare with peers on departmental
-                    leaderboards with privacy options.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-full bg-green-100 text-green-600">
-                  <CheckIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Game & Earn Mode</h3>
-                  <p className="text-neutral-600 dark:text-neutral-400">
-                    Earn additional points by participating in recaptcha
-                    sessions separate from your academic content and earn Point
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4">
-                <div className="p-2 rounded-full bg-green-100 text-green-600">
-                  <CheckIcon className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium mb-2">
-                    Cross-Institution Chatrooms
-                  </h3>
-                  <p className="text-neutral-600 dark:text-neutral-400">
-                    Connect with students from the same department across
-                    different institutions for broader knowledge sharing.
-                    (Future)
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Testimonials */}
-        <section className="w-full bg-neutral-50 dark:bg-neutral-900 py-20">
+        <section className="w-full  py-20">
           <div className="container mx-auto max-w-7xl px-6">
             <div className="text-center mb-16">
-              <h2 className={title({ size: "md" })}>What Students Say</h2>
+              <h2 className={title({ size: "md" })}>Testimonials</h2>
               <p className={subtitle({ class: "mt-4 mx-auto max-w-2xl" })}>
                 Hear from students who have transformed their academic
                 performance with CrownStudy
@@ -639,43 +442,6 @@ export default function IndexPage() {
                   </div>
                 </CardBody>
               </Card>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="w-full bg-gradient-to-r from-blue-600 to-purple-600 py-20 text-white">
-          <div className="container mx-auto max-w-7xl px-6 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">
-              Ready to Transform Your Academic Journey?
-            </h2>
-            <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
-              Join thousands of students achieving academic excellence with
-              CrownStudy today.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                className={buttonStyles({
-                  color: "primary",
-                  radius: "md",
-                  variant: "shadow",
-                  size: "lg",
-                })}
-                href={siteConfig.links.docs}
-              >
-                Sign Up Now - It's Free!
-              </Link>
-              <Link
-                className={buttonStyles({
-                  color: "primary",
-                  radius: "md",
-                  variant: "shadow",
-                  size: "lg",
-                })}
-                href="#demo"
-              >
-                Request a Demo
-              </Link>
             </div>
           </div>
         </section>
@@ -868,8 +634,6 @@ export default function IndexPage() {
                 </details>
               </div>
             </div>
-
-            
           </div>
         </section>
 
@@ -880,7 +644,7 @@ export default function IndexPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                 <div className="text-white">
                   <h2 className="text-3xl font-bold mb-4">
-                    Download CrownStudy Today
+                     CrownStudy App Incoming
                   </h2>
                   <p className="text-xl opacity-90 mb-8">
                     Take your academic success into your own hands with the most
@@ -893,6 +657,7 @@ export default function IndexPage() {
                         radius: "md",
                         variant: "shadow",
                         size: "lg",
+                        
                       })}
                       href="#app-store"
                     >

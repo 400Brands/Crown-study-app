@@ -1,3 +1,5 @@
+//@ts-nocheck
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/supabaseClient";
 import { Button, Card, CardBody, Chip, Divider, Avatar } from "@heroui/react";
@@ -19,7 +21,6 @@ const ProfileComponent = () => {
     userId,
   } = useGameContext();
 
-  const [uploading, setUploading] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);

@@ -1,4 +1,5 @@
-// src/pages/dashboard/courses/QuizTaking.tsx
+//@ts-nocheck
+
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {

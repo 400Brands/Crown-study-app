@@ -1,6 +1,5 @@
 import { Link } from "@heroui/link";
 import { button as buttonStyles } from "@heroui/theme";
-import { siteConfig } from "@/config/site";
 import { title, subtitle } from "@/components/primitives";
 import DefaultLayout from "@/layouts/default";
 import {
@@ -9,7 +8,6 @@ import {
   CardHeader,
   Image,
 } from "@heroui/react";
-import { CheckIcon } from "lucide-react";
 import GetStarted from "@/components/modal";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 

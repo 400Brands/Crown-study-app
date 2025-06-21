@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Button, Card, Spinner } from "@heroui/react";
 import { CheckCircle, XCircle, Award, Flame } from "lucide-react";
-import { Choice, Task } from "@/types"; // Import Choice and Task types
+import { Choice } from "@/types"; // Import Choice and Task types
 import { useGameContext } from "../context/GameProvider";
 
 interface QuizLabelingGameProps {
@@ -19,7 +19,6 @@ const QuizLabelingGame = ({ onComplete }: QuizLabelingGameProps) => {
     selectedChoice,
     showResult,
     isCorrect,
-    score,
     streak,
   } = useGameContext();
 

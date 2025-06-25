@@ -182,9 +182,9 @@ const Opportunities = () => {
           {/* Hero Section - Stacked on mobile */}
           <div className="bg-gradient-to-r from-indigo-800 to-blue-600 rounded-xl p-0 md:p-8 text-white mb-8">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
+              <div className="p-2">
                 <h1 className="text-2xl md:text-3xl font-bold mb-2">
-                  🎖 CrownApp Opportunities
+                  CrownApp Opportunities
                 </h1>
                 <p className="text-blue-100 max-w-2xl">
                   Unlock academic, career, and global rewards as you grow. Your
@@ -257,63 +257,55 @@ const Opportunities = () => {
                 </div>
               )}
             </div>
-
             {/* Desktop tabs */}
             <Tabs
               aria-label="Opportunity Categories"
               selectedKey={activeTab}
               onSelectionChange={(key) => setActiveTab(key.toString())}
-              className="sticky top-0 z-10 bg-white dark:bg-gray-900 pt-2"
+              className="hidden sm:block sticky top-0 z-10 bg-white dark:bg-gray-900 pt-2"
               classNames={{
                 tabList: "gap-0 overflow-x-auto",
-                tab: "px-3 sm:px-6 h-12", // Smaller padding on mobile
+                tab: "px-6 h-12",
                 cursor: "bg-blue-400 dark:bg-blue-600",
               }}
             >
               <Tab
                 key="academic"
                 title={
-                  <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="flex items-center gap-2">
                     {tabIcons.academic}
-                    <span className="hidden sm:inline">
-                      Academic Excellence
-                    </span>
-                    <span className="sm:hidden text-xs">Academic</span>
+                    <span>Academic Excellence</span>
                   </div>
                 }
               />
               <Tab
                 key="career"
                 title={
-                  <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="flex items-center gap-2">
                     {tabIcons.career}
-                    <span className="hidden sm:inline">Career Boosters</span>
-                    <span className="sm:hidden text-xs">Career</span>
+                    <span>Career Boosters</span>
                   </div>
                 }
               />
               <Tab
                 key="global"
                 title={
-                  <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="flex items-center gap-2">
                     {tabIcons.global}
-                    <span className="hidden sm:inline">Global Mobility</span>
-                    <span className="sm:hidden text-xs">Global</span>
+                    <span>Global Mobility</span>
                   </div>
                 }
               />
               <Tab
                 key="community"
                 title={
-                  <div className="flex items-center gap-1 sm:gap-2">
+                  <div className="flex items-center gap-2">
                     {tabIcons.community}
-                    <span className="hidden sm:inline">Community Perks</span>
-                    <span className="sm:hidden text-xs">Community</span>
+                    <span>Community Perks</span>
                   </div>
                 }
               />
             </Tabs>
-
             {/* Tab Content */}
             <div className="pb-4 sm:pb-8">
               {activeTab === "academic" && renderCards(rewards.academic)}

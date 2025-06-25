@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/supabaseClient";
 import {
@@ -211,10 +210,9 @@ const DashboardPage: React.FC = () => {
 
   const fetchStudyProgress = async (userId: string) => {
     try {
-      const { data: progressData } = await supabase.rpc(
-        "get_study_progress",
-        { p_user_id: userId }
-      );
+      const { data: progressData } = await supabase.rpc("get_study_progress", {
+        p_user_id: userId,
+      });
 
       if (progressData) {
         // Fallback data using context data
@@ -256,7 +254,9 @@ const DashboardPage: React.FC = () => {
           <div className="flex justify-center items-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading dashboard...</p>
+              <p className="text-gray-600 dark:text-gray-400">
+                Loading dashboard...
+              </p>
             </div>
           </div>
         </DashboardLayout>
@@ -286,7 +286,9 @@ const DashboardPage: React.FC = () => {
                   />
                 </svg>
               </div>
-              <p className="text-red-600 mb-4">{error || gameError}</p>
+              <p className="text-red-600 dark:text-red-400 mb-4">
+                {error || gameError}
+              </p>
               <Button color="primary" onClick={() => window.location.reload()}>
                 Retry
               </Button>
@@ -304,66 +306,76 @@ const DashboardPage: React.FC = () => {
           {/* Main Stats Cards - Using GameContext data */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Score Card */}
-            <Card className="border border-blue-200 bg-blue-50">
+            <Card className="border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/50">
               <CardBody className="p-4">
-                <h3 className="text-sm font-medium text-blue-800">
+                <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
                   Total Score
                 </h3>
-                <p className="text-2xl font-bold">{score}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {score}
+                </p>
                 <Progress
                   value={Math.min(100, (score / 1000) * 100)}
                   className="mt-2"
                   color="primary"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   {Math.max(0, 1000 - score)} to next milestone
                 </p>
               </CardBody>
             </Card>
 
             {/* Current Streak Card */}
-            <Card className="border border-green-200 bg-green-50">
+            <Card className="border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/50">
               <CardBody className="p-4">
-                <h3 className="text-sm font-medium text-green-800">
+                <h3 className="text-sm font-medium text-green-800 dark:text-green-200">
                   Current Streak
                 </h3>
-                <p className="text-2xl font-bold">{streak}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {streak}
+                </p>
                 <Progress
                   value={Math.min(100, (streak / 10) * 100)}
                   className="mt-2"
                   color="success"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Session: {sessionStats.tasksCompleted} tasks
                 </p>
               </CardBody>
             </Card>
 
             {/* Accuracy Card */}
-            <Card className="border border-purple-200 bg-purple-50">
+            <Card className="border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/50">
               <CardBody className="p-4">
-                <h3 className="text-sm font-medium text-purple-800">
+                <h3 className="text-sm font-medium text-purple-800 dark:text-purple-200">
                   Accuracy
                 </h3>
-                <p className="text-2xl font-bold">{accuracy}%</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {accuracy}%
+                </p>
                 <Progress value={accuracy} className="mt-2" color="secondary" />
-                <p className="text-xs text-gray-500 mt-1">{getTimeActive()}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {getTimeActive()}
+                </p>
               </CardBody>
             </Card>
 
             {/* Max Streak Card */}
-            <Card className="border border-orange-200 bg-orange-50">
+            <Card className="border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/50">
               <CardBody className="p-4">
-                <h3 className="text-sm font-medium text-orange-800">
+                <h3 className="text-sm font-medium text-orange-800 dark:text-orange-200">
                   Max Streak
                 </h3>
-                <p className="text-2xl font-bold">{maxStreak}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {maxStreak}
+                </p>
                 <Progress
                   value={Math.min(100, (maxStreak / 20) * 100)}
                   className="mt-2"
                   color="warning"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   {totalAnswered} questions answered
                 </p>
               </CardBody>
@@ -373,16 +385,25 @@ const DashboardPage: React.FC = () => {
           {/* Charts and Additional Info */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Activity Chart */}
-            <Card className="lg:col-span-2">
+            <Card className="lg:col-span-2 dark:bg-gray-900/50">
               <CardBody>
-                <h3 className="font-semibold text-lg mb-4">Weekly Activity</h3>
+                <h3 className="font-semibold text-lg mb-4 text-gray-900 dark:text-white">
+                  Weekly Activity
+                </h3>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={activityData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="day" />
-                      <YAxis />
-                      <Tooltip />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="day" stroke="#6B7280" />
+                      <YAxis stroke="#6B7280" />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "rgb(31 41 55)",
+                          border: "1px solid rgb(75 85 99)",
+                          borderRadius: "8px",
+                          color: "white",
+                        }}
+                      />
                       <Legend />
                       <Bar
                         dataKey="minutesActive"
@@ -403,9 +424,11 @@ const DashboardPage: React.FC = () => {
             </Card>
 
             {/* Rewards Summary */}
-            <Card>
+            <Card className="dark:bg-gray-900/50">
               <CardBody>
-                <h3 className="font-semibold text-lg mb-4">Rewards Summary</h3>
+                <h3 className="font-semibold text-lg mb-4 text-gray-900 dark:text-white">
+                  Rewards Summary
+                </h3>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -424,31 +447,48 @@ const DashboardPage: React.FC = () => {
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "rgb(31 41 55)",
+                          border: "1px solid rgb(75 85 99)",
+                          borderRadius: "8px",
+                          color: "white",
+                        }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
                 <Divider className="my-4" />
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm">Total Points:</span>
-                    <span className="font-medium">{score}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Total Points:
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {score}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm">Data Rewards:</span>
-                    <span className="font-medium">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Data Rewards:
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
                       {sessionStats.dataRewards.toFixed(1)} GB
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm">Tasks Completed:</span>
-                    <span className="font-medium">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Tasks Completed:
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
                       {sessionStats.tasksCompleted}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm">Session Score:</span>
-                    <span className="font-medium">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Session Score:
+                    </span>
+                    <span className="font-medium text-gray-900 dark:text-white">
                       {sessionStats.sessionScore}
                     </span>
                   </div>
@@ -472,13 +512,13 @@ const DashboardPage: React.FC = () => {
           {leaderboard.length > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Global Leaderboard */}
-              <Card>
+              <Card className="dark:bg-gray-900/50">
                 <CardBody>
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-semibold text-lg">
+                    <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
                       Global Leaderboard
                     </h3>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
                       Your rank: #{leaderboardPosition}
                     </span>
                   </div>
@@ -487,24 +527,26 @@ const DashboardPage: React.FC = () => {
                       <div
                         key={user.id}
                         className={`flex items-center justify-between p-2 rounded-lg ${
-                          user.id === userId ? "bg-blue-100" : "bg-gray-50"
+                          user.id === userId
+                            ? "bg-blue-100 dark:bg-blue-900/50"
+                            : "bg-gray-50 dark:bg-gray-800/50"
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <span className="text-sm font-medium w-6">
+                          <span className="text-sm font-medium w-6 text-gray-900 dark:text-white">
                             #{index + 1}
                           </span>
                           <Avatar size="sm" src={user.avatar} />
                           <div>
-                            <p className="text-sm font-medium">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
                               {user.id === userId ? "You" : user.name}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {user.department}
                             </p>
                           </div>
                         </div>
-                        <span className="font-bold text-blue-600">
+                        <span className="font-bold text-blue-600 dark:text-blue-400">
                           {user.points}
                         </span>
                       </div>
@@ -514,13 +556,13 @@ const DashboardPage: React.FC = () => {
               </Card>
 
               {/* Department Leaderboard */}
-              <Card>
+              <Card className="dark:bg-gray-900/50">
                 <CardBody>
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-semibold text-lg">
+                    <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
                       Department Ranking
                     </h3>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
                       Dept rank: #{departmentRank}
                     </span>
                   </div>
@@ -529,24 +571,26 @@ const DashboardPage: React.FC = () => {
                       <div
                         key={user.id}
                         className={`flex items-center justify-between p-2 rounded-lg ${
-                          user.id === userId ? "bg-green-100" : "bg-gray-50"
+                          user.id === userId
+                            ? "bg-green-100 dark:bg-green-900/50"
+                            : "bg-gray-50 dark:bg-gray-800/50"
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <span className="text-sm font-medium w-6">
+                          <span className="text-sm font-medium w-6 text-gray-900 dark:text-white">
                             #{index + 1}
                           </span>
                           <Avatar size="sm" src={user.avatar} />
                           <div>
-                            <p className="text-sm font-medium">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
                               {user.id === userId ? "You" : user.name}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {user.department}
                             </p>
                           </div>
                         </div>
-                        <span className="font-bold text-green-600">
+                        <span className="font-bold text-green-600 dark:text-green-400">
                           {user.points}
                         </span>
                       </div>
@@ -559,15 +603,19 @@ const DashboardPage: React.FC = () => {
 
           {/* Study Progress */}
           {studyProgress.length > 0 && (
-            <Card>
+            <Card className="dark:bg-gray-900/50">
               <CardBody>
-                <h3 className="font-semibold text-lg mb-4">Study Progress</h3>
+                <h3 className="font-semibold text-lg mb-4 text-gray-900 dark:text-white">
+                  Study Progress
+                </h3>
                 <div className="space-y-4">
                   {studyProgress.map((item, index) => (
                     <div key={index}>
                       <div className="flex justify-between mb-2">
-                        <span className="text-sm font-medium">{item.name}</span>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {item.name}
+                        </span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
                           {item.progress}%
                         </span>
                       </div>

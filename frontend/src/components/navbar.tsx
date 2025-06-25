@@ -1,3 +1,5 @@
+//@ts-nocheck
+
 import { Link } from "@heroui/link";
 import {
   Navbar as HeroUINavbar,
@@ -16,7 +18,26 @@ import { CrownIcon } from "lucide-react";
 import GetStarted from "./modal";
 
 export const Navbar = () => {
-  
+  const handleScroll = (e, href) => {
+    e.preventDefault();
+
+    if (href.startsWith("#")) {
+      const targetId = href.substring(1);
+      const targetElement = document.getElementById(targetId);
+
+      if (targetElement) {
+        const navbarHeight = 80; // Adjust based on your navbar height
+        const elementPosition = targetElement.offsetTop - navbarHeight;
+
+        window.scrollTo({
+          top: elementPosition,
+          behavior: "smooth",
+        });
+      }
+    } else {
+      window.location.href = href;
+    }
+  };
 
   return (
     <HeroUINavbar maxWidth="xl" position="sticky">
@@ -45,6 +66,7 @@ export const Navbar = () => {
               )}
               color="foreground"
               href={item.href}
+              onClick={(e) => handleScroll(e, item.href)}
             >
               {item.label}
             </Link>
@@ -72,7 +94,7 @@ export const Navbar = () => {
       <NavbarMenu>
         <div className="mx-4 mt-2 flex flex-col gap-2">
           {siteConfig.navMenuItems.map((item, index) => (
-            <NavbarMenuItem key={`${item}-${index}`}>
+            <NavbarMenuItem key={`${item.label}-${index}`}>
               <Link
                 color={
                   index === 2
@@ -81,7 +103,8 @@ export const Navbar = () => {
                       ? "danger"
                       : "foreground"
                 }
-                href="#"
+                href={item.href}
+                onClick={(e) => handleScroll(e, item.href)}
                 size="lg"
               >
                 {item.label}

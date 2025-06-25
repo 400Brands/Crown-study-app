@@ -53,7 +53,7 @@ const GameInterface = ({
   onChoiceSelect,
   onStartGame,
   onEndGame,
-  onRetry
+  onRetry,
 }: GameInterfaceProps) => {
   const getChoiceColor = (choice: Choice) => {
     if (!showResult) return "default";
@@ -92,22 +92,30 @@ const GameInterface = ({
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <div className="text-sm text-blue-600">Score</div>
+                    <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
+                      <div className="text-sm text-blue-600 dark:text-blue-400">
+                        Score
+                      </div>
                       <div className="text-2xl font-bold">{score}</div>
                     </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <div className="text-sm text-green-600">Streak</div>
+                    <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg">
+                      <div className="text-sm text-green-600 dark:text-green-400">
+                        Streak
+                      </div>
                       <div className="text-2xl font-bold flex items-center gap-1">
                         {streak} <Flame className="text-orange-500" />
                       </div>
                     </div>
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <div className="text-sm text-purple-600">Accuracy</div>
+                    <div className="bg-purple-50 dark:bg-purple-900/30 p-4 rounded-lg">
+                      <div className="text-sm text-purple-600 dark:text-purple-400">
+                        Accuracy
+                      </div>
                       <div className="text-2xl font-bold">{accuracy}%</div>
                     </div>
-                    <div className="bg-amber-50 p-4 rounded-lg">
-                      <div className="text-sm text-amber-600">Time Left</div>
+                    <div className="bg-amber-50 dark:bg-amber-900/30 p-4 rounded-lg">
+                      <div className="text-sm text-amber-600 dark:text-amber-400">
+                        Time Left
+                      </div>
                       <div className="text-2xl font-bold flex items-center gap-1">
                         {timeLeft}s <Timer className="text-amber-500" />
                       </div>
@@ -134,25 +142,33 @@ const GameInterface = ({
                   </h2>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Tasks Completed:</span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Tasks Completed:
+                      </span>
                       <span className="font-medium">
                         {sessionStats.tasksCompleted}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Session Score:</span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Session Score:
+                      </span>
                       <span className="font-medium">
                         {sessionStats.sessionScore}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Data Rewards:</span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Data Rewards:
+                      </span>
                       <span className="font-medium">
                         {sessionStats.dataRewards.toFixed(1)} GB
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Duration:</span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Duration:
+                      </span>
                       <span className="font-medium">
                         {Math.floor(
                           (new Date().getTime() -
@@ -163,7 +179,9 @@ const GameInterface = ({
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Max Streak:</span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        Max Streak:
+                      </span>
                       <span className="font-medium flex items-center gap-1">
                         {maxStreak} <Flame className="text-orange-500" />
                       </span>
@@ -179,12 +197,12 @@ const GameInterface = ({
                 <Card className="text-center py-12">
                   <CardBody className="space-y-6">
                     <div className="flex justify-center">
-                      <div className="bg-blue-100 p-4 rounded-full">
-                        <Trophy className="w-12 h-12 text-blue-600" />
+                      <div className="bg-blue-100 dark:bg-blue-900/50 p-4 rounded-full">
+                        <Trophy className="w-12 h-12 text-blue-600 dark:text-blue-400" />
                       </div>
                     </div>
                     <h2 className="text-2xl font-bold">Mind Challenge</h2>
-                    <p className="text-gray-600 max-w-md mx-auto">
+                    <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
                       Answer visual questions correctly to earn points, build
                       streaks, and win data rewards. Each correct answer gives
                       you 0.1GB data.
@@ -207,7 +225,7 @@ const GameInterface = ({
                     <div className="flex justify-center">
                       <RefreshCw className="w-10 h-10 text-blue-500 animate-spin" />
                     </div>
-                    <p className="mt-4 text-gray-600">
+                    <p className="mt-4 text-gray-600 dark:text-gray-400">
                       Loading next question...
                     </p>
                   </CardBody>
@@ -221,7 +239,9 @@ const GameInterface = ({
                     <h3 className="text-xl font-medium mt-4">
                       Error Loading Task
                     </h3>
-                    <p className="text-gray-600 mt-2">{error}</p>
+                    <p className="text-gray-600 dark:text-gray-400 mt-2">
+                      {error}
+                    </p>
                     <Button
                       color="primary"
                       onPress={onRetry} // Changed from fetchTask to onRetry
@@ -238,13 +258,13 @@ const GameInterface = ({
                       <Badge color="success" variant="flat">
                         {currentTask.category.toUpperCase()}
                       </Badge>
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                         <Bolt className="w-4 h-4 text-yellow-500" />
                         <span>Complexity: {currentTask.complexity}/4</span>
                       </div>
                     </div>
 
-                    <div className="bg-gray-100 rounded-lg p-4 min-h-48 flex items-center justify-center">
+                    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 min-h-48 flex items-center justify-center">
                       {currentTask.content?.image?.url ? (
                         <img
                           src={currentTask.content.image.url}
@@ -295,7 +315,7 @@ const GameInterface = ({
                           </Button>
                         ))
                       ) : (
-                        <div className="text-center text-gray-500 py-8">
+                        <div className="text-center text-gray-500 dark:text-gray-400 py-8">
                           No choices available for this task
                         </div>
                       )}
@@ -305,8 +325,8 @@ const GameInterface = ({
                       <div
                         className={`p-4 rounded-lg ${
                           isCorrect
-                            ? "bg-green-50 text-green-800"
-                            : "bg-red-50 text-red-800"
+                            ? "bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300"
+                            : "bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300"
                         }`}
                       >
                         <div className="font-medium">

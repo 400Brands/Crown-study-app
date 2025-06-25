@@ -16,7 +16,10 @@ export default function IndexPage() {
     <DefaultLayout>
       {/* Hero Section */}
       <main className="flex flex-col w-full space-y-8">
-        <section className="flex flex-col md:flex-row w-full min-h-[80vh] items-center justify-between gap-8 py-6">
+        <section
+          id="hero"
+          className="flex flex-col md:flex-row w-full min-h-[80vh] items-center justify-between gap-8 py-6"
+        >
           <div className="w-full md:w-1/2 flex items-center justify-center">
             <DotLottieReact
               src="https://lottie.host/c9d99835-7150-422b-a928-2c9171b144da/VEJ9kxpKQg.lottie"
@@ -310,7 +313,10 @@ export default function IndexPage() {
         </section>
 
         {/* How It Works Section */}
-        <section className="w-full bg-neutral-50 dark:bg-neutral-900 py-20 rounded-lg">
+        <section
+          id="how-it-works"
+          className="w-full bg-neutral-50 dark:bg-neutral-900 py-20 rounded-lg"
+        >
           <div className="container mx-auto max-w-7xl px-6">
             <div className="text-center mb-16">
               <h2 className={title({ size: "md" })}>
@@ -366,7 +372,7 @@ export default function IndexPage() {
         </section>
 
         {/* Testimonials */}
-        <section className="w-full  py-20">
+        <section id="testimonials" className="w-full  py-20">
           <div className="container mx-auto max-w-7xl px-6">
             <div className="text-center mb-16">
               <h2 className={title({ size: "md" })}>Testimonials</h2>
@@ -642,7 +648,7 @@ export default function IndexPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                 <div className="text-white">
                   <h2 className="text-3xl font-bold mb-4">
-                     CrownStudy App Incoming
+                    CrownStudy App Incoming
                   </h2>
                   <p className="text-xl opacity-90 mb-8">
                     Take your academic success into your own hands with the most
@@ -655,7 +661,6 @@ export default function IndexPage() {
                         radius: "md",
                         variant: "shadow",
                         size: "lg",
-                        
                       })}
                       href="#app-store"
                     >

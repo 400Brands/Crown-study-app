@@ -14,7 +14,8 @@ const ProfileComponent = () => {
     userProfile: profile,
     profileLoading: loading,
     profileError,
-    complexity, userProfile,
+    complexity,
+    userProfile,
     session,
     refreshProfile,
     isInitialized,
@@ -126,7 +127,9 @@ const ProfileComponent = () => {
           <div className="flex justify-center items-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading profile...</p>
+              <p className="text-gray-600 dark:text-gray-400">
+                Loading profile...
+              </p>
             </div>
           </div>
         </DashboardLayout>
@@ -154,10 +157,12 @@ const ProfileComponent = () => {
                     />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
                   Profile Error
                 </h3>
-                <p className="text-gray-600 mb-4">{profileError}</p>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  {profileError}
+                </p>
                 <Button color="primary" onClick={refreshProfile}>
                   Try Again
                 </Button>
@@ -179,14 +184,14 @@ const ProfileComponent = () => {
         <div className="space-y-6 ml-4">
           {/* Profile Completion Card */}
           {!profile.profile_complete && (
-            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
+            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border border-blue-200 dark:border-blue-800">
               <CardBody className="p-6">
                 <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                   <div>
-                    <h2 className="text-xl font-bold text-blue-800 mb-2">
+                    <h2 className="text-xl font-bold text-blue-800 dark:text-blue-300 mb-2">
                       Complete Your Profile
                     </h2>
-                    <p className="text-gray-700 mb-4">
+                    <p className="text-gray-700 dark:text-gray-300 mb-4">
                       Please update the following information to get full access
                       to all features. Your current game complexity level is{" "}
                       {complexity}.
@@ -198,7 +203,7 @@ const ProfileComponent = () => {
                         </Chip>
                       ))}
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
                       Profile completion:{" "}
                       {Math.round(((9 - missingFields.length) / 9) * 100)}%
                     </div>
@@ -217,9 +222,9 @@ const ProfileComponent = () => {
 
           {/* Error Messages */}
           {(updateError || uploadError) && (
-            <Card className="border-red-200 bg-red-50">
+            <Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30">
               <CardBody className="p-4">
-                <div className="flex items-center gap-2 text-red-700">
+                <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
                   <svg
                     className="w-5 h-5"
                     fill="currentColor"
@@ -258,10 +263,7 @@ const ProfileComponent = () => {
                 {/* Avatar Section */}
                 <div className="flex flex-col items-center gap-4">
                   <Avatar
-                    src={
-                      
-                      session?.user?.user_metadata?.avatar_url
-                    }
+                    src={session?.user?.user_metadata?.avatar_url}
                     alt="Profile Avatar"
                     className="w-32 h-32 text-lg"
                     isBordered
@@ -271,7 +273,7 @@ const ProfileComponent = () => {
                 {/* Profile Details Section */}
                 <div className="flex-1">
                   <div className="flex justify-between items-start mb-4">
-                    <h2 className="text-2xl font-bold text-gray-900">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                       {profile.full_name || "Anonymous User"}
                     </h2>
                     <Button
@@ -288,68 +290,68 @@ const ProfileComponent = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-500">
+                      <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400">
                         Email
                       </h3>
-                      <p className="text-gray-900">
+                      <p className="text-gray-900 dark:text-gray-100">
                         {profile.email || "Not provided"}
                       </p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-500">
+                      <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400">
                         Matric Number
                       </h3>
-                      <p className="text-gray-900">
+                      <p className="text-gray-900 dark:text-gray-100">
                         {profile.matric_number || "Not provided"}
                       </p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-500">
+                      <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400">
                         Date of Birth
                       </h3>
-                      <p className="text-gray-900">
+                      <p className="text-gray-900 dark:text-gray-100">
                         {profile.date_of_birth
                           ? new Date(profile.date_of_birth).toLocaleDateString()
                           : "Not provided"}
                       </p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-500">
+                      <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400">
                         Gender
                       </h3>
-                      <p className="text-gray-900">
+                      <p className="text-gray-900 dark:text-gray-100">
                         {profile.gender || "Not provided"}
                       </p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-500">
+                      <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400">
                         School
                       </h3>
-                      <p className="text-gray-900">
+                      <p className="text-gray-900 dark:text-gray-100">
                         {profile.school_name || "Not provided"}
                       </p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-500">
+                      <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400">
                         Department
                       </h3>
-                      <p className="text-gray-900">
+                      <p className="text-gray-900 dark:text-gray-100">
                         {profile.department || "Not provided"}
                       </p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-500">
+                      <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400">
                         Level
                       </h3>
-                      <p className="text-gray-900">
+                      <p className="text-gray-900 dark:text-gray-100">
                         {profile.level || "Not provided"}
                       </p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-500">
+                      <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400">
                         State of Origin
                       </h3>
-                      <p className="text-gray-900">
+                      <p className="text-gray-900 dark:text-gray-100">
                         {profile.state_of_origin || "Not provided"}
                       </p>
                     </div>
@@ -360,7 +362,7 @@ const ProfileComponent = () => {
                       <Chip color="success" variant="flat">
                         Profile Complete
                       </Chip>
-                      <p className="text-sm text-gray-600 mt-2">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                         Your profile is 100% complete. Thank you for providing
                         all the required information.
                       </p>

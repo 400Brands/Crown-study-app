@@ -3,7 +3,6 @@ import {
   Home,
   Layers,
   Library,
-  Edit3,
   User,
   Settings,
   HelpCircle,
@@ -48,7 +47,6 @@ const navigationItems: NavGroup[] = [
         name: "My Courses",
         icon: Layers,
         path: "/dashboard/courses",
-        
       },
       {
         name: "Study Library",
@@ -56,18 +54,11 @@ const navigationItems: NavGroup[] = [
         path: "/dashboard/library",
         notifications: 8,
       },
-      
     ],
   },
   {
     section: "COMMUNITY",
     items: [
-      {
-        name: "Notes Feed",
-        icon: Edit3,
-        path: "/dashboard/note-feed",
-        notifications: 12,
-      },
       {
         name: "Opportunites Hub",
         icon: Target,
@@ -85,7 +76,7 @@ const navigationItems: NavGroup[] = [
         path: "/dashboard/focused-mode",
         notifications: 3,
         isPriority: true,
-        color: "text-red-600",
+        color: "text-red-600 dark:text-red-400",
       },
     ],
   },
@@ -93,7 +84,7 @@ const navigationItems: NavGroup[] = [
     section: "SYSTEM",
     items: [
       { name: "Profile", icon: User, path: "/dashboard/profile" },
-      { name: "Settings", icon: Settings, path: "/dashboard/settings" },
+      { name: "Settings", icon: Settings, path: "/dashboard/profile" },
       { name: "Help", icon: HelpCircle, path: "/" },
     ],
   },
@@ -127,7 +118,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div
         className={`${
           expanded ? "w-64" : "md:w-20 w-0"
-        } h-full flex flex-col transition-all duration-300 ease-in-out fixed border-r shadow-md bg-white z-10 ${
+        } h-full flex flex-col transition-all duration-300 ease-in-out fixed border-r border-gray-200 dark:border-gray-700 shadow-md bg-white dark:bg-gray-900 z-10 ${
           !expanded ? "overflow-hidden" : ""
         }`}
       >
@@ -138,7 +129,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           {navigationItems.map((group) => (
             <div key={group.section} className="mb-6 last:mb-2">
               {expanded && (
-                <h3 className="px-4 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <h3 className="px-4 mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   {group.section}
                 </h3>
               )}
@@ -156,10 +147,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         }}
                         className={`flex items-center w-full rounded-lg p-3 transition-all ${
                           location.pathname.startsWith(item.path)
-                            ? "bg-indigo-50 text-indigo-600"
-                            : "text-gray-700 hover:bg-gray-100"
+                            ? "bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
                         } ${item.color || ""} ${
-                          item.highlight ? "ring-1 ring-indigo-300" : ""
+                          item.highlight
+                            ? "ring-1 ring-indigo-300 dark:ring-indigo-600"
+                            : ""
                         }`}
                       >
                         <div className="relative">
@@ -167,7 +160,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                             size={20}
                             className={
                               location.pathname.startsWith(item.path)
-                                ? "text-indigo-600"
+                                ? "text-indigo-600 dark:text-indigo-400"
                                 : ""
                             }
                           />
@@ -185,7 +178,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                               {item.name}
                             </span>
                             {item.notifications && (
-                              <span className="bg-indigo-600 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+                              <span className="bg-indigo-600 dark:bg-indigo-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
                                 {item.notifications}
                               </span>
                             )}
@@ -204,8 +197,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                 onClick={() => handleNavigation(subItem.path)}
                                 className={`flex items-center w-full rounded-lg px-3 py-2 text-xs transition-all ${
                                   location.pathname === subItem.path
-                                    ? "bg-indigo-100 text-indigo-600"
-                                    : "text-gray-600 hover:bg-gray-50"
+                                    ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"
+                                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
                                 }`}
                               >
                                 {subItem.name}
@@ -230,13 +223,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         >
           <button
             onClick={toggleSidebar}
-            className="p-1.5 rounded-full bg-white border shadow-sm hover:bg-gray-50 transition-colors"
+            className="p-1.5 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
           >
             {expanded ? (
-              <ChevronLeft className="h-4 w-4 text-gray-600" />
+              <ChevronLeft className="h-4 w-4 text-gray-600 dark:text-gray-400" />
             ) : (
-              <ChevronRight className="h-4 w-4 text-gray-600" />
+              <ChevronRight className="h-4 w-4 text-gray-600 dark:text-gray-400" />
             )}
           </button>
         </div>
